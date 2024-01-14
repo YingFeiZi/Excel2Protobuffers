@@ -2,63 +2,104 @@ import os
 import re
 from shutil import copyfile
 
+TYPE_ROW = 2
+NAME_ROW = 3
+DATA_ROW = 4
 
 excelDir = "../../Excel"
 inputDir = "excel"
-outputBytesDir = "../../Client/Assets/Res/Config/FlatBuffer"
-outputCSDir = "../../Client/Assets/Src/Config/FlatBuffer"
+# outputBytesDir = "../../Client/Assets/Res/Config/ProtoBuffer"
+# outputCSDir = "../../Client/Assets/Src/Config/ProtoBuffer"
+outputBytesDir = "../UGUI_Project/Assets/Res/Config/ProtoBuffer"
+outputCSDir = "../UGUI_Project/Assets/Src/Config/ProtoBuffer"
 
 
+# --cpp_out=OUT_DIR           Generate C++ header and source.
+#   --csharp_out=OUT_DIR        Generate C# source file.
+#   --java_out=OUT_DIR          Generate Java source file.
+#   --kotlin_out=OUT_DIR        Generate Kotlin file.
+#   --objc_out=OUT_DIR          Generate Objective-C header and source.
+#   --php_out=OUT_DIR           Generate PHP source file.
+#   --pyi_out=OUT_DIR           Generate python pyi stub.
+#   --python_out=OUT_DIR        Generate Python source file.
+#   --ruby_out=OUT_DIR          Generate Ruby source file.
+#   --rust_out=OUT_DIR          Generate Rust sources.
+
+ProtoOutDir ={
+	'cpp': '--cpp_out=',
+	'csharp': '--csharp_out=',
+	'java': '--java_out=',
+	'kotlin': '--kotlin_out=',
+	'objc': '--objc_out=',
+	'php': '--php_out=',
+	'pyi': '--pyi_out=',
+	'python': '--python_out=',
+	'ruby': '--ruby_out=',
+	'rust': '--rust_out='
+}
+
+# 脚本文件后缀名
+scriptExtDict = {
+	'bytes' :'bytes',
+	'xlsx' : 'xlsx',
+	'proto' : 'proto',
+	'cpp': 'cc',
+	'csharp': 'cs',
+	'java': 'java',
+	'kotlin': 'kt',
+	'objc': 'h',
+	'php': 'php',
+	'pyi': 'pyi',
+	'python': 'py',
+	'ruby': 'rb',
+	'rust': 'rs',
+}
+
+GEN_DIR_DICT ={
+	'xlsx' : 'excel',
+    'bytes' :'gen_bytes',
+    'proto' :'gen_proto',
+    'cpp' : 'gen_cpp',
+    'csharp': 'gen_csharp',
+    'java': 'gen_java',
+    'kotlin': 'gen_kotlin',
+    'objc': 'gen_objc',
+    'php': 'gen_php',
+    'pyi': 'gen_pyi',
+    'python': 'gen_python',
+    'ruby': 'gen_ruby',
+    'rust': 'gen_rust'
+}
+def getGenDirByLanguage(language):
+    return getRootPath(GEN_DIR_DICT[language])
 # 本工具的根目录
 work_root = os.getcwd()
 
-# flatc.exe所在目录
+# protoc.exe所在目录
 protoc = os.path.join(work_root, 'protoc-25.2/bin/protoc.exe')
 def GetProtoc():
     return protoc
 
+def getRootPath(folder):
+    return GetFullPath(work_root, folder)
+def getRootPathFile(folder, file):
+	return getRootPath(f"{folder}/{file}")
+
+
 # 存放excel的目录
-excel_root = os.path.join(work_root, inputDir)
 def GetRootExcel():
-    return excel_root
+    return getRootPath(inputDir) 
 def GetRootExcelFile(file):
-	return os.path.join(excel_root, file)
+	return getRootPathFile(inputDir, file)
 
 # 存放excel生成的flatbuffers二进制文件的目录
-bytes_root = os.path.join(work_root, 'gen_bytes')
-
 def GetRootBytes():
-    return bytes_root
+    return getGenDirByLanguage('bytes')
 
-# 生成的 fbs 文件的目录
-Proto_root = os.path.join(work_root, 'gen_Proto')
+# 生成的 proto 文件的目录
 def GetRootProto():
-    return Proto_root
+    return getGenDirByLanguage('proto')
 
-# fbs 生成的 python 代码目录
-python_root = os.path.join(work_root, 'gen_python')
-def GetRootPython():
-    return python_root
-
-# fbs 生成的 c# 代码目录
-csharp_root = os.path.join(work_root, 'gen_csharp')
-def GetRootCSharp():
-    return csharp_root
-
-# fbs 生成的 go 代码目录
-go_root = os.path.join(work_root, 'gen_go')
-def GetRootGo():
-    return go_root
-
-# fbs 生成的 rust 代码目录
-rust_root = os.path.join(work_root, 'gen_rust')
-def GetRootRust():
-    return rust_root
-
-# fbs 生成的 lua 代码目录
-lua_root = os.path.join(work_root, 'gen_lua')
-def GetRootLua():
-    return lua_root
 #自动类型，只要值下面支持的都行
 CUSTOM_TYPES = {
     "num" : "int32",
@@ -116,13 +157,8 @@ def GetEnableArrylistValue(type):
 		return True, subType
 	return False, None
 
-
-excel_ext = 'xlsx'
-proto_ext = 'proto'
 def CheckExcelFile(file):
-	return file.endswith(excel_ext)
-
-
+	return file.endswith(scriptExtDict['xlsx'])
 
 def GetFilesByExtension(path, extension):
     return [f for f in os.listdir(path) if f.endswith(f".{extension}")]
@@ -164,11 +200,12 @@ def Init(names):
 	except FileExistsError:
 		pass
 	clean_directory(inputDir)
-	excels = GetFilesByExtension(excelDir, excel_ext)
+	ext = scriptExtDict['xlsx']
+	excels = GetFilesByExtension(excelDir, ext)
 	for file in excels:
 		name, ext = GetFileNameExt(file)
 		if len(names)>0 and not name in names:
 			continue
 		input = GetFullPath(excelDir, file)
-		output = GetFullPathExtension(inputDir, name, excel_ext)
+		output = GetFullPathExtension(inputDir, name, ext)
 		copyfile(input, output)

@@ -12,7 +12,7 @@ syntax = "proto3";
 package Config;
 
 message %sArray {
-	repeated %s objs = 1;
+	repeated %s datas = 1;
 }
 """
 

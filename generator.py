@@ -2,8 +2,9 @@ import os
 import re
 from shutil import copyfile
 import sys
-import generator_proto as genProto
 import config
+import generator_proto as genProto
+import generator_bytes as genBytes
 
 names =['Item']
 
@@ -12,19 +13,18 @@ if __name__ == '__main__':
 	if len(args) >0:
 		names = [re.split(r"\.|-", name)[0] for name in args]
 		print(names)
-
-	config.Init(names)
+	#从本地配置文件复制配置到工具目录
+	# config.Init(names)
 	genProto.run()		# 必须先生成代码
-	# genrbytes.run()	# 然后将excel数据打包成 flatbuffers 的二进制
+	genBytes.run()	# 然后将excel数据打包成 flatbuffers 的二进制
 
-	# config.mkdir(config.outputBytesDir)
-	# config.mkdir(config.outputCSDir)
 	# for name in names:
-	# 	bytes_file_path = os.path.join(config.generatedBytesDir, f"{name}.bytes")
-	# 	copBytes_path = os.path.join(config.outputBytesDir, f"{name}.bytes")
-	# 	cs_file_path = os.path.join(config.generatedCSDir, f"{name}.cs")
-	# 	copCs_path = os.path.join(config.outputCSDir, f"{name}.cs")
-		
+	# 	bytesext =config.scriptExtDict['bytes']
+	# 	bytes_file_path = config.GetFullPathExtension(config.GEN_DIR_DICT['bytes'],name, bytesext) 
+	# 	copBytes_path = config.GetFullPathExtension(config.outputBytesDir, name, bytesext)
+	# 	csext = config.scriptExtDict['csharp']
+	# 	cs_file_path = config.GetFullPathExtension(config.GEN_DIR_DICT['csharp'],name, csext)
+	# 	copCs_path = config.GetFullPathExtension(config.outputCSDir, name, csext)
 	# 	if  os.path.exists(bytes_file_path)  and  os.path.exists(cs_file_path):
 	# 		try:
 	# 			copyfile(bytes_file_path, copBytes_path)

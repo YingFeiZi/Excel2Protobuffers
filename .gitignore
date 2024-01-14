@@ -2,7 +2,14 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
+/gen_Bytes
+/gen_Proto
+/gen_Python
+/gen_Csharp
+/gen_Go
+/gen_Rust
+/gen_Lua
+/include
 # C extensions
 *.so
 
