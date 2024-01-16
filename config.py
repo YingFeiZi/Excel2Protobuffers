@@ -223,6 +223,12 @@ def initIni():
             # print(f"Section: {section}, Option: {option}, Value: {value}")
             ini[option] = value
     # print(ini)
+    global TYPE_ROW
+    TYPE_ROW = int(ini['typerow'])
+    global NAME_ROW
+    NAME_ROW = int(ini['namerow'])
+    global DATA_ROW
+    DATA_ROW = int(ini['datarow'])
 
 def mkdir(path):
 	if not os.path.exists(path):
@@ -246,5 +252,5 @@ def Init(names):
 			continue
 		input = GetFullPath(ini['exceldir'], file)
 		output = GetFullPathExtension(GEN_DIR_DICT['xlsx'], name, ext)
-		# print(name, ext, input, output)
+		print(name, ext, input, output)
 		copyfile(input, output)
