@@ -14,7 +14,11 @@ tools Excel to Protobuffers
     outputCSDir             # 生成的CS目录
     outputConfigCSDir       # 生成的configCS目录
 
-    2.excel配表：
+    2.配置customType.ini文件
+    type : value            #type 自定义类型，配置在excel表头上的
+                            #value 为对应proto支持的值类型 repeated类型的用[]包起来
+
+    3.excel配表：
     ![exceltpl](image.png)
     如图所示，默认是第二行字段类型，第三行是字段名 
     如需修改，修改config.py的 
@@ -22,7 +26,7 @@ tools Excel to Protobuffers
         NAME_ROW = 3   # 第三行是字段名
         DATA_ROW = 4   # 第四行是开始读数据位置数据
         
-    2.执行run.bat 自动生成出对应语言代码及序列化的excel数据, 传参，文件名，支持多个， 无参就是整个excel目录 
+    4.执行run.bat 自动生成出对应语言代码及序列化的excel数据, 传参，文件名，支持多个， 无参就是整个excel目录 
 
 ## 支持类型：
     1.默认类型 

@@ -123,14 +123,14 @@ def GetRootProto():
 
 #自动类型，只要值下面支持的都行
 CUSTOM_TYPES = {
-    "num" : "int32",
-    "unum" : "uint32",
-    "str" : "string", 
-    "ilist" : "[int32]", 
-    "uilist" : "[uint32]", 
-    "flist" : "[float]", 
-    "slist" : "[string]",
-    "blist" : "[bool]",
+    # "num" : "int32",
+    # "unum" : "uint32",
+    # "str" : "string", 
+    # "ilist" : "[int32]", 
+    # "uilist" : "[uint32]", 
+    # "flist" : "[float]", 
+    # "slist" : "[string]",
+    # "blist" : "[bool]",
 }
 def GetCustomTypeValue(value):
     return CUSTOM_TYPES.get(value, value)
@@ -222,13 +222,19 @@ def initIni():
         for option, value in confini.items(section):
             # print(f"Section: {section}, Option: {option}, Value: {value}")
             ini[option] = value
-    # print(ini)
     global TYPE_ROW
     TYPE_ROW = int(ini['typerow'])
     global NAME_ROW
     NAME_ROW = int(ini['namerow'])
     global DATA_ROW
     DATA_ROW = int(ini['datarow'])
+    
+    customini = iniParse.ConfigParser()
+    customini.read('customType.ini')
+    for section in customini.sections():
+        for option, value in customini.items(section):
+            CUSTOM_TYPES[option] = value
+    
 
 def mkdir(path):
 	if not os.path.exists(path):

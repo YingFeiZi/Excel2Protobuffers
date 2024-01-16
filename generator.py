@@ -17,7 +17,7 @@ def CopyToFolder(name, outDir,language_sign):
 			except IOError as e:
 				print(f"--->ERROR: An error occurred while copying {name}.bytes or {name}.cs: {e}")
 
-# names =['cfg_activity']
+# names =['cfgactivity']
 names =[]
 
 if __name__ == '__main__':
