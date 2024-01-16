@@ -27,12 +27,17 @@ if __name__ == '__main__':
 		# print(names)
 	#从本地配置文件复制配置到工具目录
 	config.Init(names)
+	excels = config.GetFilesByExtension(config.GEN_DIR_DICT['xlsx'],config.scriptExtDict['xlsx'])
+	if len(excels) < 1:
+		input('No excel file found, input anykey to exit')
+		sys.exit(0)
+	excelnames = [f.split('.')[0] for f in excels]
+	
+
 	genProto.run()		# 必须先生成代码
 	genBytes.run()	# 然后将excel数据打包成 flatbuffers 的二进制
-	if len(names) < 1:
-		excels = config.GetFilesByExtension(config.inputDir,config.scriptExtDict['xlsx'])
-		names = [f.split('.')[0] for f in excels]
-	for name in names:
+		
+	for name in excelnames:
 		CopyToFolder(name, config.getOutBytesDir(), 'bytes')
 		CopyToFolder(name, config.getOutputCSDir(), 'csharp')
 		CopyToFolder(f"{name}Config", config.getOutputConfigCSDir(), 'configcs')

@@ -1,24 +1,32 @@
 import os
 import re
 from shutil import copyfile
+import configparser as iniParse
 
 TYPE_ROW = 2
 NAME_ROW = 3
 DATA_ROW = 4
 
-excelDir = "../../Excel"
-inputDir = "excel"
-outputBytesDir = "../../Client/Assets/Res/Config/"
-outputCSDir = "../../Client/Assets/Src/Config/ProtoBuffer"
-outputConfigCSDir = "../../Client/Assets/Src/Config"
+
+ini = {}
+
+# exceldir = ""
+# outputbytesdir = ""
+# outputcsdir = ""
+# outputconfigcsdir = ""
+# excelDir = "../../Excel"
+# outputBytesDir = "../../Client/Assets/Res/Config/"
+# outputCSDir = "../../Client/Assets/Src/Config/ProtoBuffer"
+# outputConfigCSDir = "../../Client/Assets/Src/Config"
+# inputDir = "excel"
 # outputBytesDir = "../UGUI_Project/Assets/Res/Config/ProtoBuffer"
 # outputCSDir = "../UGUI_Project/Assets/Src/Config/ProtoBuffer"
 def getOutBytesDir():
-    return getAndCheckPath(outputBytesDir)
+    return getAndCheckPath(ini['outputbytes'])
 def getOutputCSDir():
-    return getAndCheckPath(outputCSDir)
+    return getAndCheckPath(ini['outputcs'])
 def getOutputConfigCSDir():
-    return getAndCheckPath(outputConfigCSDir)
+    return getAndCheckPath(ini['outputconfigcs'])
 
 def getAndCheckPath(path):
 	mkdir(path)
@@ -101,9 +109,9 @@ def getRootPathFileExtension(folder, file,ext):
 
 # 存放excel的目录
 def GetRootExcel():
-    return getRootPath(inputDir) 
+    return getRootPath(GEN_DIR_DICT['xlsx']) 
 def GetRootExcelFile(file):
-	return getRootPathFile(inputDir, file)
+	return getRootPathFile(GEN_DIR_DICT['xlsx'], file)
 
 # 存放excel生成的flatbuffers二进制文件的目录
 def GetRootBytes():
@@ -201,7 +209,20 @@ def clean_directory(target_path):
     except OSError:
         # 提供更详细的错误信息
         print('旧数据清理失败，可能有文件正在使用。请关掉已打开的文件并重试。')
-
+def initIni():
+    confini = iniParse.ConfigParser()
+    confini.read('config.ini')
+    # if confini.has_section('Path'):
+    #     exceldir = confini.get('Path', 'exceldir')
+    #     outputBytesDir = confini.get('Path', 'outputBytesDir')
+    #     outputCSDir = confini.get('Path', 'outputCSDir')
+    #     outputConfigCSDir = confini.get('Path', 'outputConfigCSDir')
+	# # 遍历所有section和选项
+    for section in confini.sections():
+        for option, value in confini.items(section):
+            # print(f"Section: {section}, Option: {option}, Value: {value}")
+            ini[option] = value
+    # print(ini)
 
 def mkdir(path):
 	if not os.path.exists(path):
@@ -209,20 +230,21 @@ def mkdir(path):
 excelKeyDict = {}
 
 def Init(names):
+	initIni()
 	excelKeyDict = {}
 	try:
-		mkdir(inputDir)
+		mkdir(GEN_DIR_DICT['xlsx'])
 	except FileExistsError:
 		pass
-	clean_directory(inputDir)
+	clean_directory(GEN_DIR_DICT['xlsx'])
 	ext = scriptExtDict['xlsx']
-	excels = GetFilesByExtension(excelDir, ext)
+	excels = GetFilesByExtension(ini['exceldir'], ext)
 	for file in excels:
 		name, ext = GetFileNameExt(file)
 		ext = ext.split(".")[1]
 		if (len(names)>0 and not name in names) or name.startswith('~'):
 			continue
-		input = GetFullPath(excelDir, file)
-		output = GetFullPathExtension(inputDir, name, ext)
+		input = GetFullPath(ini['exceldir'], file)
+		output = GetFullPathExtension(GEN_DIR_DICT['xlsx'], name, ext)
 		# print(name, ext, input, output)
 		copyfile(input, output)
