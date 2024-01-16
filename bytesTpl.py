@@ -22,14 +22,14 @@ rowCode = "data{index}.{type} = {variable} \n"
 rowCodeRepeated = "data{index}.{type}.append({variable})\n"
 
 def getRowCode(index, type, variable, isString = False, isRepeated = False):
-    variable = isString and f"'{variable}'" or variable
+    variable = isString and f"\"{variable}\"" or variable
     if isRepeated:
         return rowCodeRepeated.format(index=index, type=type, variable=variable)
     else:
         return rowCode.format(index=index, type=type, variable=variable)
 
-def getAddRowCode(index, rowcodes):
-    return addRowCode.format(index=index, rowcodes=rowcodes)
+def getAddRowCode(idx, rowcodes):
+    return addRowCode.format(index=idx, rowcodes=rowcodes)
 
 def getPythonCode(tablepy, table, allRowCodes, ByteFilePath):
     return pythonCode.format(tablepb=tablepy, table = table, allRowCodes=allRowCodes, ByteFilePath=ByteFilePath)

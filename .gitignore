@@ -10,6 +10,7 @@ __pycache__/
 /gen_Rust
 /gen_Lua
 /include
+/gen_configcs
 # C extensions
 *.so
 

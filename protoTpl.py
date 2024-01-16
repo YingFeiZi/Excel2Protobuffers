@@ -1,7 +1,7 @@
 import os
 
 row_code = """
-message %s {
+message %sData {
     %s
 }
 """
@@ -12,7 +12,7 @@ syntax = "proto3";
 package Config;
 
 message %sArray {
-	repeated %s datas = 1;
+	repeated %sData datas = 1;
 }
 """
 
