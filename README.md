@@ -8,7 +8,13 @@ tools Excel to Protobuffers
 
 
 ## 使用方法：
-    1.excel配表：
+    1.配置config.ini文件
+    excelDir                # excel目录
+    outputBytesDir          # 生成的序列化数据目录
+    outputCSDir             # 生成的CS目录
+    outputConfigCSDir       # 生成的configCS目录
+
+    2.excel配表：
     ![exceltpl](image.png)
     如图所示，默认是第二行字段类型，第三行是字段名 
     如需修改，修改config.py的 
@@ -16,7 +22,7 @@ tools Excel to Protobuffers
         NAME_ROW = 3   # 第三行是字段名
         DATA_ROW = 4   # 第四行是开始读数据位置数据
         
-    2.执行run.bat 自动生成出对应语言代码及序列化的excel数据
+    2.执行run.bat 自动生成出对应语言代码及序列化的excel数据, 传参，文件名，支持多个， 无参就是整个excel目录 
 
 ## 支持类型：
     1.默认类型 
