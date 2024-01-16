@@ -1,0 +1,1 @@
+start /WAIT ../Python3.11.7/python generator.py {0}

@@ -62,7 +62,6 @@ def read_excel_sheet(sheet):
 	variable_defaultValue_dict = {}
 	sheet_name = sheet.title
 	mod_name = sheet_name
-	single_mod_name = mod_name + 'RowData'
 	data_col_count = sheet.max_column#列数
 	for col_num in range(0, data_col_count):
 		col_num += 1
@@ -128,7 +127,7 @@ def read_excel_sheet(sheet):
 			}
 			single_row_data.append(data_dict)
 		sheet_row_data_list.append(single_row_data)
-	generate_bytes(mod_name, single_mod_name, config.GetRootBytes(), sheet_row_data_list)
+	generate_bytes(mod_name, sheet_row_data_list)
 
 def get_single_data_code(index, row_data):
 	variable_create_code = ''
@@ -164,7 +163,8 @@ def get_list_data_code(excel_row_list):
 		index += 1
 	return allRowCodes
 
-def generate_bytes(mod_name, single_mod_name, bytes_file_root_path, excel_row_list):
+def generate_bytes(mod_name, excel_row_list):
+	bytes_file_root_path = config.GetRootBytes()
 	allRowCodes = get_list_data_code(excel_row_list)
 	byte_file_path = config.GetFullPathExtension(bytes_file_root_path, mod_name,config.scriptExtDict['bytes'])
 	byte_file_path = byte_file_path.replace('\\', '/')
@@ -175,8 +175,18 @@ def generate_bytes(mod_name, single_mod_name, bytes_file_root_path, excel_row_li
 	# file = open(f"{mod_name}_pb.py", 'a', encoding='utf-8')
 	# file.write(code)
 	# file.close()
-	exec(code)
-	print('生成成功: ', byte_file_path)
+	try:
+		exec(code)
+		# print('生成成功: ', byte_file_path)
+	except Exception as e:
+		print(e)
+		print('生成失败: ', byte_file_path)
+		if os.path.exists(f"{mod_name}_pb.py"):
+			os.remove(f"{mod_name}_pb.py")
+			file = open(f"{mod_name}_pb.py", 'a', encoding='utf-8')
+			file.write(code)
+			file.close()
+
 
 
 
@@ -187,12 +197,17 @@ def generate_excel_data(excel_path):
 
 
 def generate_all_excel_byte_data():
-	excel_root = config.GetRootExcel()
-	for root, dirs, files in os.walk(excel_root):
-		for file in files:
-			excel_file_path = os.path.join(root, file)
-			if config.CheckExcelFile(excel_file_path) and not file.startswith('~'):
-				generate_excel_data(excel_file_path)
+	excels = config.GetFilesByExtension(config.GetRootExcel(), config.scriptExtDict['xlsx'])
+	index =  1
+	count = len(excels)
+	for excel in excels:
+		filename = os.path.basename(excel)
+		name, ext = os.path.splitext(filename)
+		ext = config.scriptExtDict['bytes']
+		print(f"[{index}/{count}]  {config.GetRootBytes()}\{name}.{ext}")
+		generate_excel_data(config.GetRootExcelFile(excel))
+		index += 1
+
 
 def run():
 	print('---------------- 将excel生成flatbuffers二进制数据 ----------------')

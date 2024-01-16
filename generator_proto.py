@@ -8,6 +8,7 @@ import shutil
 import time
 import config
 import protoTpl 
+import configcsTpl
 
 def getProtocLanguage(language_sign):
 	if language_sign == 'cpp':
@@ -67,6 +68,13 @@ def readsheet(sheet):
 		if not config.CheckSupportType(row_type_data):
 			print('表', sheet_name, '字段', variable_name, '的数据类型', row_type_data,'不在支持的列表中')
 			continue
+
+		if col_num == 1:
+			data_dict = {
+				'field_name': variable_name,
+				'field_type': row_type_data,
+			}
+			config.excelKeyDict[sheet_name]=data_dict
 		variable_dict[variable_name] = row_type_data
 
 		variable_defaultValue_dict[variable_name] = "NULL"
@@ -86,11 +94,11 @@ def readsheet(sheet):
 	group_data_table_code_str = protoTpl.getGroupcode(group_table_name, row_table_name)
 	proto_path = os.path.join(config.GetRootProto(), f"{group_table_name}.{config.scriptExtDict['proto']}")
 	write_str = protoTpl.getProtoCode(group_data_table_code_str, row_data_table_code_str)
-	writeProto(proto_path, write_str)
+	writeFile(proto_path, write_str)
  
-def writeProto(path, context):
+def writeFile(path, context):
 	# 写入文件
-	print(path)
+	# print(path)
 	with open(path, 'w') as f:
 		f.write(context)
 
@@ -102,6 +110,12 @@ def generate_target_file(protoDir,proto_file, target_path, language_sign):
 	# print(command)
 	subprocess.call(command, shell=True)
 
+def generate_config(mod_name, config_file_root_path):
+	configcs_file_path = config.GetFullPathExtension(config_file_root_path, f"{mod_name}Config",config.scriptExtDict['configcs'])
+	configcs_file_path = configcs_file_path.replace('\\', '/')
+	keyValue = config.excelKeyDict[mod_name]
+	code = configcsTpl.getCsCode(mod_name, keyValue)
+	writeFile(configcs_file_path, code)
 
 def generate_target(language_sign):
 	target_path = config.getGenDirByLanguage(language_sign)
@@ -113,18 +127,28 @@ def generate_target(language_sign):
 	index = 0
 	for proto_file in protos:
 		index += 1
-		generate_target_file(protoDir,proto_file, target_path, language_sign)
 		filename = os.path.basename(proto_file)
 		name, ext = os.path.splitext(filename)
 		ext = config.scriptExtDict[language_sign]
 		print(f"[{index}/{count}]  {target_path}\{name}.{ext}")
+		if language_sign == 'configcs':
+			generate_config(name, target_path)
+			name = f"{name}Config"
+		else:
+			generate_target_file(protoDir,proto_file, target_path, language_sign)
 
 
 def genearte_excel_to_proto():
 	excels = config.GetFilesByExtension(config.GetRootExcel(), config.scriptExtDict['xlsx'])
+	index =  1
+	count = len(excels)
 	for excel in excels:
+		filename = os.path.basename(excel)
+		name, ext = os.path.splitext(filename)
+		ext = config.scriptExtDict['proto']
+		print(f"[{index}/{count}]  {config.GetRootBytes()}\{name}.{ext}")
 		excel_to_proto(config.GetRootExcelFile(excel))
-
+		index += 1
 
 def clean():
 	config.clean_directory(config.GetRootProto())
@@ -134,9 +158,11 @@ def run():
 	#print('---------------- 清理旧文件 ----------------')
 	clean()
 
-	print('---------------- 生成Proto文件, 生成不同语言代码 ----------------')
+	print("\n---------------- 生成Proto文件, 生成不同语言代码 ----------------")
 	genearte_excel_to_proto()
-	print('---------------- 开始生成 python代码 ----------------')
+	print("\n---------------- 开始生成 python代码 ----------------")
 	generate_target('python')	# 生成Python代码是必须的，因为要用来打包数据
-	print('---------------- 开始生成 csharp 代码 ----------------')
+	print("\n---------------- 开始生成 csharp 代码 ----------------")
 	generate_target('csharp')
+	print("\n---------------- 开始生成 config csharp 代码 ----------------")
+	generate_target('configcs')

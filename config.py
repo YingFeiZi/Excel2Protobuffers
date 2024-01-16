@@ -8,11 +8,21 @@ DATA_ROW = 4
 
 excelDir = "../../Excel"
 inputDir = "excel"
-# outputBytesDir = "../../Client/Assets/Res/Config/ProtoBuffer"
-# outputCSDir = "../../Client/Assets/Src/Config/ProtoBuffer"
-outputBytesDir = "../UGUI_Project/Assets/Res/Config/ProtoBuffer"
-outputCSDir = "../UGUI_Project/Assets/Src/Config/ProtoBuffer"
+outputBytesDir = "../../Client/Assets/Res/Config/"
+outputCSDir = "../../Client/Assets/Src/Config/ProtoBuffer"
+outputConfigCSDir = "../../Client/Assets/Src/Config"
+# outputBytesDir = "../UGUI_Project/Assets/Res/Config/ProtoBuffer"
+# outputCSDir = "../UGUI_Project/Assets/Src/Config/ProtoBuffer"
+def getOutBytesDir():
+    return getAndCheckPath(outputBytesDir)
+def getOutputCSDir():
+    return getAndCheckPath(outputCSDir)
+def getOutputConfigCSDir():
+    return getAndCheckPath(outputConfigCSDir)
 
+def getAndCheckPath(path):
+	mkdir(path)
+	return path
 
 # --cpp_out=OUT_DIR           Generate C++ header and source.
 #   --csharp_out=OUT_DIR        Generate C# source file.
@@ -43,6 +53,7 @@ scriptExtDict = {
 	'bytes' :'bytes',
 	'xlsx' : 'xlsx',
 	'proto' : 'proto',
+    'configcs':'cs',
 	'cpp': 'cc',
 	'csharp': 'cs',
 	'java': 'java',
@@ -59,6 +70,7 @@ GEN_DIR_DICT ={
 	'xlsx' : 'excel',
     'bytes' :'gen_bytes',
     'proto' :'gen_proto',
+    'configcs':'gen_configcs',
     'cpp' : 'gen_cpp',
     'csharp': 'gen_csharp',
     'java': 'gen_java',
@@ -83,8 +95,9 @@ def GetProtoc():
 def getRootPath(folder):
     return GetFullPath(work_root, folder)
 def getRootPathFile(folder, file):
-	return getRootPath(f"{folder}/{file}")
-
+	return getRootPath(f"{folder}\\{file}")
+def getRootPathFileExtension(folder, file,ext):
+	return getRootPath(f"{folder}\\{file}.{ext}")
 
 # 存放excel的目录
 def GetRootExcel():
@@ -193,8 +206,10 @@ def clean_directory(target_path):
 def mkdir(path):
 	if not os.path.exists(path):
 		os.makedirs(path)
+excelKeyDict = {}
 
 def Init(names):
+	excelKeyDict = {}
 	try:
 		mkdir(inputDir)
 	except FileExistsError:
@@ -204,8 +219,10 @@ def Init(names):
 	excels = GetFilesByExtension(excelDir, ext)
 	for file in excels:
 		name, ext = GetFileNameExt(file)
-		if len(names)>0 and not name in names:
+		ext = ext.split(".")[1]
+		if (len(names)>0 and not name in names) or name.startswith('~'):
 			continue
 		input = GetFullPath(excelDir, file)
 		output = GetFullPathExtension(inputDir, name, ext)
+		# print(name, ext, input, output)
 		copyfile(input, output)
