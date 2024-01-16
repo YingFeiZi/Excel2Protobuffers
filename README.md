@@ -19,8 +19,7 @@ tools Excel to Protobuffers
                             #value 为对应proto支持的值类型 repeated类型的用[]包起来
 
     3.excel配表：
-    ![Image text](https://github.com/YingFeiZi/Excel2Protobuffers/blob/main/image.png)
-    
+    ![](image.png)
     如图所示，默认是第二行字段类型，第三行是字段名 
     如需修改，修改config.py的 
         TYPE_ROW = 2   # 第二行是字段类型
