@@ -7,20 +7,11 @@ import numpy as np
 import config
 import bytesTpl
 
-
-
 ARRAY_SPLITTER = '#'
-
 arry32 = ['int', 'int32', 'sint32', 'sfixed32']
 arryu32 = ['uint','uint32', 'fixed32']
 arry64 =  ['int64', 'double','sint64', 'sfixed64']
 arryu64 = ['uint64', 'fixed64']
-def trimDotZeroes(text):
-	if isinstance(text, str):
-		text = text.strip()
-		if text == "": return 0
-		return re.sub("\.0+$", "", text)
-	return text
 
 def get_real_value(data_type, raw_value):
 	if not raw_value :
@@ -31,13 +22,13 @@ def get_real_value(data_type, raw_value):
 		value = value.replace('\\', '\\\\')
 		return '''{}'''.format(value)
 	elif data_type in arry32:
-		return np.int32(trimDotZeroes(raw_value))
+		return np.int32(trimDotZeroes(raw_value)) # type: ignore
 	elif data_type in arryu32:
-		return np.uint32(trimDotZeroes(raw_value))
+		return np.uint32(trimDotZeroes(raw_value)) # type: ignore
 	elif data_type in arry64:
-		return np.int64(trimDotZeroes(raw_value))
+		return np.int64(trimDotZeroes(raw_value)) # type: ignore
 	elif data_type in arryu64:
-		return np.uint64(trimDotZeroes(raw_value))
+		return np.uint64(trimDotZeroes(raw_value)) # type: ignore
 	elif data_type == 'float':
 		return float(raw_value)
 	elif data_type == 'bool':
@@ -46,8 +37,6 @@ def get_real_value(data_type, raw_value):
 		return str(raw_value)
 	else:
 		return None
-
-
 
 def trimDotZeroes(text):
 	if isinstance(text, str):
@@ -187,14 +176,10 @@ def generate_bytes(mod_name, excel_row_list):
 			file.write(code)
 			file.close()
 
-
-
-
 def generate_excel_data(excel_path):
 	wb = openpyxl.load_workbook(excel_path,True, False,True)
 	sheet = wb.active
 	read_excel_sheet(sheet)
-
 
 def generate_all_excel_byte_data():
 	excels = config.GetFilesByExtension(config.GetRootExcel(), config.scriptExtDict['xlsx'])
@@ -207,7 +192,6 @@ def generate_all_excel_byte_data():
 		print(f"[{index}/{count}]  {config.GetRootBytes()}\{name}.{ext}")
 		generate_excel_data(config.GetRootExcelFile(excel))
 		index += 1
-
 
 def run():
 	print('---------------- 将excel生成flatbuffers二进制数据 ----------------')

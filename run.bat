@@ -3,7 +3,7 @@
 if exist "../Python3.11.7" (
 "../Python3.11.7/python" generator.py %1
 ) else (
-python" generator.py %1
+python generator.py %1
 )
 
 if %errorlevel%==0 (
