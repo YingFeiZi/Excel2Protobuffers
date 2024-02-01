@@ -113,6 +113,9 @@ def generate_target_file(protoDir,proto_file, target_path, language_sign):
 def generate_config(mod_name, config_file_root_path):
 	configcs_file_path = config.GetFullPathExtension(config_file_root_path, f"{mod_name}Config",config.scriptExtDict['configcs'])
 	configcs_file_path = configcs_file_path.replace('\\', '/')
+	if len(config.excelKeyDict) < 1:
+		print('异常退出: ',mod_name, ' 没有找到主键ID类型')
+		return
 	keyValue = config.excelKeyDict[mod_name]
 	code = configcsTpl.getCsCode(mod_name, keyValue)
 	writeFile(configcs_file_path, code)
