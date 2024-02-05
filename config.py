@@ -271,5 +271,5 @@ def Init(names):
 			continue
 		input = GetFullPath(ini['exceldir'], file)
 		output = GetFullPathExtension(GEN_DIR_DICT['xlsx'], name, ext)
-		print(name, ext, input, output)
+		# print(name, ext, input, output)
 		copyfile(input, output)

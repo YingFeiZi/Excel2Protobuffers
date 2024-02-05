@@ -224,7 +224,6 @@ def byteFormat(parse):
 	code = bytesTpl.getPythonCode(f"{config.GEN_DIR_DICT['python']}.{mod_name}_pb2",mod_name.upper(), allRowCodes,byte_file_path)
 	try:
 		exec(code)
-		config.writeFile(f"{mod_name}_pb2.py", code)
 	except Exception as e:
 		print(e)
 		print('生成失败: ', byte_file_path)
@@ -254,5 +253,5 @@ def generate_all_excel_byte_data():
 		index += 1
 
 def run():
-	print('---------------- 将excel生成flatbuffers二进制数据 ----------------')
+	print('\n---------------- 将excel生成flatbuffers二进制数据 ----------------')
 	generate_all_excel_byte_data()
