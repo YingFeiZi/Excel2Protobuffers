@@ -3,9 +3,11 @@ import re
 from shutil import copyfile
 import configparser as iniParse
 
-TYPE_ROW = 2
-NAME_ROW = 3
-DATA_ROW = 4
+PROTOTYPE = 1
+PROTOSHOW = 3
+TYPEROW = 2
+NAMEROW = 7
+DATAROW = 8
 
 
 ini = {}
@@ -96,7 +98,8 @@ def getGenDirByLanguage(language):
 work_root = os.getcwd()
 
 # protoc.exe所在目录
-protoc = os.path.join(work_root, 'protoc-25.2/bin/protoc.exe')
+# protoc = os.path.join(work_root, 'protoc-25.2/bin/protoc.exe')
+protoc = os.path.join(work_root, 'protoc-25.2/bin/protoc3.exe')
 def GetProtoc():
     return protoc
 
@@ -209,6 +212,12 @@ def clean_directory(target_path):
     except OSError:
         # 提供更详细的错误信息
         print('旧数据清理失败，可能有文件正在使用。请关掉已打开的文件并重试。')
+def writeFile(path, context):
+	# 写入文件
+	# print(path)
+	with open(path, 'w', encoding='utf-8') as f:
+		f.write(context)
+
 def initIni():
     confini = iniParse.ConfigParser()
     confini.read('config.ini')
@@ -222,12 +231,16 @@ def initIni():
         for option, value in confini.items(section):
             # print(f"Section: {section}, Option: {option}, Value: {value}")
             ini[option] = value
-    global TYPE_ROW
-    TYPE_ROW = int(ini['typerow'])
-    global NAME_ROW
-    NAME_ROW = int(ini['namerow'])
-    global DATA_ROW
-    DATA_ROW = int(ini['datarow'])
+    global TYPEROW
+    TYPEROW = int(ini['typerow'])
+    global NAMEROW
+    NAMEROW = int(ini['namerow'])
+    global DATAROW
+    DATAROW = int(ini['datarow'])
+    global PROTOTYPE
+    PROTOTYPE = int(ini['prototype'])
+    global PROTOSHOW
+    PROTOSHOW = int(ini['protoshow'])
     
     customini = iniParse.ConfigParser()
     customini.read('customType.ini')

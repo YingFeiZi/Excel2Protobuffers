@@ -1,9 +1,11 @@
+from ast import parse
 import openpyxl
 from datetime import date, datetime
 import sys
 import os
 import re
 import numpy as np
+from ExcelParse import ExcelParse
 import config
 import bytesTpl
 
@@ -54,7 +56,7 @@ def read_excel_sheet(sheet):
 	data_col_count = sheet.max_column#列数
 	for col_num in range(0, data_col_count):
 		col_num += 1
-		namecell  = sheet._get_cell(config.NAME_ROW, col_num)
+		namecell  = sheet._get_cell(config.NAMEROW, col_num)
 		if not namecell.value:
 			continue
 		name_data = str(namecell.value)
@@ -63,7 +65,7 @@ def read_excel_sheet(sheet):
 		if name_data =='getway':
 			pass
 
-		typecell  = sheet._get_cell(config.TYPE_ROW, col_num)
+		typecell  = sheet._get_cell(config.TYPEROW, col_num)
 		if not typecell.value:
 			continue
 		type_data = str(typecell.value).split(':')
@@ -90,7 +92,7 @@ def read_excel_sheet(sheet):
 	data_row_count = sheet.max_row
 
 	sheet_row_data_list = []
-	for row_data in sheet.iter_rows(min_row=config.DATA_ROW, max_row=data_row_count, min_col=1, max_col=data_col_count):
+	for row_data in sheet.iter_rows(min_row=config.DATAROW, max_row=data_row_count, min_col=1, max_col=data_col_count):
 		# 存储每一个字段的字段名，数值，类型
 		single_row_data = []
 		
@@ -181,6 +183,64 @@ def generate_excel_data(excel_path):
 	sheet = wb.active
 	read_excel_sheet(sheet)
 
+##############################################################################################################################
+def get_list_data_code_new(excel_row_list):
+	allRowCodes=''
+	index=0
+	for RowData in excel_row_list:
+		rowcodes = get_single_data_code_new(index,RowData)
+		allRowCodes += bytesTpl.getAddRowCode(index, rowcodes)
+		index += 1
+	return allRowCodes
+
+def get_single_data_code_new(index, row_data):
+	variable_create_code = ''
+	for data in row_data:
+		fvalue = data.value
+		if fvalue == None and len(data.arrayvalue) < 1:
+			continue
+		ftype = data.type
+		fname = data.name
+		
+		isRepeated = data.isRepeated()
+		if isRepeated:
+			valueArrsLen = len(data.arrayvalue)
+			for curIndex in range(valueArrsLen):
+				isstring =  ftype == 'string'
+				variable_create_code += bytesTpl.getRowCode(index, fname, data.arrayvalue[curIndex], isstring, True)
+		else:
+			isstring =  ftype == 'string'
+			variable_create_code += bytesTpl.getRowCode(index, fname, fvalue, isstring, False)
+	return variable_create_code
+
+def byteFormat(parse):
+	# 组合变量定义代码字符串)
+	mod_name = parse.sheetName
+	excel_row_list  = parse.sheet_row_data_list
+	bytes_file_root_path = config.GetRootBytes()
+	allRowCodes = get_list_data_code_new(excel_row_list)
+	byte_file_path = config.GetFullPathExtension(bytes_file_root_path, mod_name,config.scriptExtDict['bytes'])
+	byte_file_path = byte_file_path.replace('\\', '/')
+	code = bytesTpl.getPythonCode(f"{config.GEN_DIR_DICT['python']}.{mod_name}_pb2",mod_name.upper(), allRowCodes,byte_file_path)
+	try:
+		exec(code)
+		config.writeFile(f"{mod_name}_pb2.py", code)
+	except Exception as e:
+		print(e)
+		print('生成失败: ', byte_file_path)
+		config.writeFile(f"{mod_name}_pb2.py", code)
+		# if os.path.exists(f"{mod_name}_pb2.py"):
+		# 	os.remove(f"{mod_name}_pb2.py")
+		# 	file = open(f"{mod_name}_pb2.py", 'a', encoding='utf-8')
+		# 	file.write(code)
+		# 	file.close()
+def generate_excel_data_new(path):
+	parse = ExcelParse(path, config.TYPEROW, config.NAMEROW, config.DATAROW, config.PROTOTYPE, config.PROTOSHOW)
+	parse.readExcel()
+	byteFormat(parse)
+
+##############################################################################################################################
+
 def generate_all_excel_byte_data():
 	excels = config.GetFilesByExtension(config.GetRootExcel(), config.scriptExtDict['xlsx'])
 	index =  1
@@ -189,8 +249,8 @@ def generate_all_excel_byte_data():
 		filename = os.path.basename(excel)
 		name, ext = os.path.splitext(filename)
 		ext = config.scriptExtDict['bytes']
-		print(f"[{index}/{count}]  {config.GetRootBytes()}\{name}.{ext}")
-		generate_excel_data(config.GetRootExcelFile(excel))
+		print(f"[{index}/{count}]  {config.GetRootBytes()}\\{name}.{ext}")
+		generate_excel_data_new(config.GetRootExcelFile(excel))
 		index += 1
 
 def run():

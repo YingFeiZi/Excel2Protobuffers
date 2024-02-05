@@ -23,9 +23,9 @@ tools Excel to Protobuffers
     3.excel配表：
     如图所示，默认是第二行字段类型，第三行是字段名 
     如需修改，修改config.py的 
-        TYPE_ROW = 2   # 第二行是字段类型
-        NAME_ROW = 3   # 第三行是字段名
-        DATA_ROW = 4   # 第四行是开始读数据位置数据
+        TYPEROW = 2   # 第二行是字段类型
+        NAMEROW = 3   # 第三行是字段名
+        DATAROW = 4   # 第四行是开始读数据位置数据
         
     4.执行run.bat 自动生成出对应语言代码及序列化的excel数据, 传参，文件名，支持多个， 无参就是整个excel目录 
 

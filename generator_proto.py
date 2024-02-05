@@ -6,6 +6,7 @@ import sys
 import os
 import shutil
 import time
+from ExcelParse import ExcelParse
 import config
 import protoTpl 
 import configcsTpl
@@ -32,6 +33,37 @@ def getProtocLanguage(language_sign):
 	if language_sign == 'rust':
 		return "--rust_out="
 
+def writeProto(excelparse):
+	proto_path = os.path.join(config.GetRootProto(), f"{excelparse.sheetName}.{config.scriptExtDict['proto']}")
+	write_str = protoFormat(excelparse)
+	config.writeFile(proto_path, write_str)
+def protoFormat(excelparse):
+	# 组合变量定义代码字符串
+	variables_str = ''
+	index=1
+	for variable in excelparse.variableDict:
+		data_type = variable.type
+		substr = f"{data_type}"
+		if variable.isRepeated():
+			substr = f"repeated {data_type}"
+		if not variable.isShow():
+			substr +="//"
+		variables_str += protoTpl.getRowLineCore(substr, variable.name, index)
+		index += 1
+
+	variables_str = variables_str.strip(' \t\n\t')
+	row_table_name = excelparse.rowTableName.upper()
+	row_data_table_code_str = protoTpl.getRowCode(row_table_name, variables_str)
+	# 组合列表代码字符串
+	group_table_name = excelparse.groupTableName.upper()
+	group_data_table_code_str = protoTpl.getGroupcode(row_data_table_code_str,group_table_name, row_table_name)
+	return group_data_table_code_str
+	
+def excel_to_protonew(excel_path):
+	excelparse = ExcelParse(excel_path, config.TYPEROW, config.NAMEROW, config.DATAROW, config.PROTOTYPE, config.PROTOSHOW)
+	excelparse.readExcel()
+	writeProto(excelparse)
+
 def excel_to_proto(excel_path):
 	wb = openpyxl.load_workbook(excel_path,True, False,True)
 	sheet = wb.active
@@ -47,12 +79,12 @@ def readsheet(sheet):
 	data_col_count = sheet.max_column#列数
 	for col_num in range(0, data_col_count):
 		col_num += 1
-		name_datacell = sheet.cell(config.NAME_ROW, col_num)
+		name_datacell = sheet.cell(config.NAMEROW, col_num)
 		if not name_datacell.value:
 			continue
 		name_data = name_datacell.value
 		if name_data == None or name_data.strip() == "": continue
-		typecell = sheet.cell(config.TYPE_ROW, col_num)
+		typecell = sheet.cell(config.TYPEROW, col_num)
 		if not typecell.value:
 			continue
 		type_data = typecell.value.split(':')[0]
@@ -89,19 +121,12 @@ def readsheet(sheet):
 		variables_str += protoTpl.getRowLineCore(subType, variable, index, isArry)
 		index += 1
 	variables_str = variables_str.strip(' \t\n\t')
-	row_data_table_code_str = protoTpl.getRowCode(row_table_name, variables_str)
+	row_data_table_code_str = protoTpl.getRowCode(row_table_name.upper(), variables_str)
 	# 组合列表代码字符串
-	group_data_table_code_str = protoTpl.getGroupcode(group_table_name, row_table_name)
+	group_data_table_code_str = protoTpl.getGroupcode(row_data_table_code_str, group_table_name.upper(), row_table_name.upper())
 	proto_path = os.path.join(config.GetRootProto(), f"{group_table_name}.{config.scriptExtDict['proto']}")
-	write_str = protoTpl.getProtoCode(group_data_table_code_str, row_data_table_code_str)
-	writeFile(proto_path, write_str)
- 
-def writeFile(path, context):
-	# 写入文件
-	# print(path)
-	with open(path, 'w') as f:
-		f.write(context)
-
+	write_str = group_data_table_code_str #protoTpl.getProtoCode(group_data_table_code_str, row_data_table_code_str)
+	config.writeFile(proto_path, write_str)
 
 def generate_target_file(protoDir,proto_file, target_path, language_sign):
 	filename,ext = config.GetFileNameExt(proto_file)
@@ -118,7 +143,7 @@ def generate_config(mod_name, config_file_root_path):
 		return
 	keyValue = config.excelKeyDict[mod_name]
 	code = configcsTpl.getCsCode(mod_name, keyValue)
-	writeFile(configcs_file_path, code)
+	config.writeFile(configcs_file_path, code)
 
 def generate_target(language_sign):
 	target_path = config.getGenDirByLanguage(language_sign)
@@ -133,7 +158,7 @@ def generate_target(language_sign):
 		filename = os.path.basename(proto_file)
 		name, ext = os.path.splitext(filename)
 		ext = config.scriptExtDict[language_sign]
-		print(f"[{index}/{count}]  {target_path}\{name}.{ext}")
+		print(f"[{index}/{count}]  {target_path}\\{name}.{ext}")
 		if language_sign == 'configcs':
 			generate_config(name, target_path)
 			name = f"{name}Config"
@@ -149,8 +174,8 @@ def genearte_excel_to_proto():
 		filename = os.path.basename(excel)
 		name, ext = os.path.splitext(filename)
 		ext = config.scriptExtDict['proto']
-		print(f"[{index}/{count}]  {config.GetRootBytes()}\{name}.{ext}")
-		excel_to_proto(config.GetRootExcelFile(excel))
+		print(f"[{index}/{count}]  {config.GetRootBytes()}\\{name}.{ext}")
+		excel_to_protonew(config.GetRootExcelFile(excel))
 		index += 1
 
 def clean():
@@ -167,5 +192,5 @@ def run():
 	generate_target('python')	# 生成Python代码是必须的，因为要用来打包数据
 	print("\n---------------- 开始生成 csharp 代码 ----------------")
 	generate_target('csharp')
-	print("\n---------------- 开始生成 config csharp 代码 ----------------")
-	generate_target('configcs')
+	# print("\n---------------- 开始生成 config csharp 代码 ----------------")
+	# generate_target('configcs')

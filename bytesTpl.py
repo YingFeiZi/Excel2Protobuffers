@@ -4,7 +4,7 @@ pythonCode = """
 import sys
 import {tablepb} as {table}
 
-dataArray = {table}.{table}Array()
+dataArray = {table}.{table}ARRAY()
 
 {allRowCodes}
 
@@ -13,7 +13,7 @@ with open('{ByteFilePath}', 'wb') as f:
 """
 
 addRowCode = """
-data{index} = dataArray.datas.add()
+data{index} = dataArray.rows.add()
 {rowcodes}
 """
 
