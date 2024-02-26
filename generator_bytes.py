@@ -76,7 +76,8 @@ def read_excel_sheet(sheet):
 		if variable_name in variable_dict:
 			print('存在相同的字段名: ', variable_name)
 			print('异常退出')
-			sys.exit()
+			# sys.exit()
+			config.Quit()
 		if not config.CheckSupportType(row_type_data):
 			continue
 		variable_dict[variable_name] = row_type_data

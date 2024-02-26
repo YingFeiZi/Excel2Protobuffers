@@ -42,6 +42,5 @@ if __name__ == '__main__':
 		CopyToFolder(name, config.getOutputCSDir(), 'csharp')
 		CopyToFolder(f"{name}Config", config.getOutputConfigCSDir(), 'configcs')
 
-	print('')
-	input("Done, input anykey to exit")
-	sys.exit(0)
+	# print('')
+	config.Quit()

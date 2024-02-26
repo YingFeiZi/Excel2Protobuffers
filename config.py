@@ -2,6 +2,7 @@ import os
 import re
 from shutil import copyfile
 import configparser as iniParse
+import sys
 
 PROTOTYPE = 1
 PROTOSHOW = 3
@@ -254,6 +255,10 @@ def mkdir(path):
 		os.makedirs(path)
 excelKeyDict = {}
 
+def Quit():
+	input("\nDone, input anykey to exit")
+	sys.exit(0)
+      
 def Init(names):
 	initIni()
 	excelKeyDict = {}

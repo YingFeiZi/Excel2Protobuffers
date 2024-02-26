@@ -95,11 +95,13 @@ def readsheet(sheet):
 		row_type_data = config.GetCustomTypeValue(type_data)
 		if variable_name in variable_dict:
 			print('异常退出: ','表', sheet_name, '存在相同的字段名: ', variable_name)
-			sys.exit()
+			# sys.exit()
+			config.Quit()
 
 		if not config.CheckSupportType(row_type_data):
 			print('表', sheet_name, '字段', variable_name, '的数据类型', row_type_data,'不在支持的列表中')
-			continue
+			# continue
+			config.Quit()
 
 		if col_num == 1:
 			data_dict = {
