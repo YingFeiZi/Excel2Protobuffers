@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 import re
 from shutil import copyfile
 import configparser as iniParse
@@ -96,11 +96,11 @@ GEN_DIR_DICT ={
 def getGenDirByLanguage(language):
     return getRootPath(GEN_DIR_DICT[language])
 # 本工具的根目录
-work_root = os.getcwd()
+work_root = Path.cwd()
 
 # protoc.exe所在目录
 # protoc = os.path.join(work_root, 'protoc-25.2/bin/protoc.exe')
-protoc = os.path.join(work_root, 'protoc-25.2/bin/protoc3.exe')
+protoc = work_root.joinpath('protoc-25.2/bin/protoc3.exe')
 def GetProtoc():
     return protoc
 
@@ -183,35 +183,34 @@ def GetEnableArrylistValue(type):
 	return False, None
 
 def CheckExcelFile(file):
-	return file.endswith(scriptExtDict['xlsx'])
+	return str(file).endswith(scriptExtDict['xlsx'])
 
 def GetFilesByExtension(path, extension):
-    return [f for f in os.listdir(path) if f.endswith(f".{extension}")]
+    return [f for f in Path(path).iterdir() if str(f).endswith(f".{extension}")]
 def GetFullFilesByExtension(path, extension):
-    return [GetFullPath(path, f) for f in os.listdir(path) if f.endswith(f".{extension}")]
+    return [ f for f in Path(path).iterdir() if str(f).endswith(f".{extension}")]
 
 def GetFullPath(path, file):
-	return os.path.join(path, file)
+	return Path(path).joinpath(file)
 def GetFullPathExtension(path, filename, extension):
     return GetFullPath(path, f"{filename}.{extension}")
 
 def GetFileNameExt(file):
-	filename = os.path.basename(file)
-	name, ext = os.path.splitext(filename)
+	p = Path(file)
+	name, ext = p.name, p.suffix
 	return re.split(r"\.|-", name)[0], ext
 
 def clean_directory(target_path):
     # 确保目标路径是一个目录
-    if not os.path.isdir(target_path):
-        os.mkdir(target_path)
+    p = Path(target_path)
+    if not p.is_dir():
+        p.mkdir(parents=True)
     
     try:
         # 遍历目录树删除所有文件
-        for root, dirs, files in os.walk(target_path):
-            for file in files:
-                file_path = os.path.join(root, file)
-                os.remove(file_path)
-                #print(f'清理文件: {file_path}')
+        for file in p.iterdir():
+            file.unlink()
+			#print(f'清理文件: {file_path}')
     except OSError:
         # 提供更详细的错误信息
         print('旧数据清理失败，可能有文件正在使用。请关掉已打开的文件并重试。')
@@ -253,8 +252,10 @@ def initIni():
     clean_directory(GEN_DIR_DICT['xlsx'])
 
 def mkdir(path):
-	if not os.path.exists(path):
-		os.makedirs(path)
+    p = Path(path)
+    if not p.exists():
+        p.mkdir(parents=True)
+
 excelKeyDict = {}
 
 def Quit():

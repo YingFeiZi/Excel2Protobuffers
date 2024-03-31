@@ -1,5 +1,5 @@
 import sys
-import os
+from pathlib import Path
 # from PyQt6.QtCore import *
 # from PyQt6.QtGui import *
 # from PyQt6.QtWidgets import *
@@ -46,7 +46,7 @@ class FileConverterApp(QWidget):
         main_layout = QVBoxLayout()
         search_layout = QHBoxLayout()
         search_label = QLabel("搜索：")
-        search_label.setFixedWidth(100)
+        search_label.setLineWidth(80)
         search_layout.addWidget(search_label)
         self.search_text = QLineEdit()
         self.search_text.textChanged.connect(self.searchChange)
@@ -110,19 +110,19 @@ class FileConverterApp(QWidget):
             self.refresh_files()
     def buttonrefresh(self):
         self.refresh_files(self.search_text.text())
-        
+
     def refresh_files(self, search=""):
         # Add your refresh files logic here
         fs = config.GetFullFilesByExtension(self.selectdir, config.scriptExtDict['xlsx'])
-        searchfs = [f for f in fs if search in f.split("\\")[-1] or search in f.split("\\")[-1].lower()]
-        self.searchlist = sorted(searchfs, key=lambda x: os.path.getmtime(x), reverse=False)
+        searchfs = [f for f in fs if search in str(f).split("\\")[-1] or search in str(f).split("\\")[-1].lower()]
+        self.searchlist = sorted(searchfs, key=lambda x: Path(x).stat().st_mtime, reverse=False)
         for box in self.file_list:
             self.scroll_layout.removeWidget(box)
         self.file_list.clear()
 
         for file in self.searchlist:
             item = QCheckBox()
-            item.setText(os.path.abspath(file))
+            item.setText(file.name)
             self.file_list.append(item)
             self.scroll_layout.addWidget(item)
 
@@ -130,14 +130,14 @@ class FileConverterApp(QWidget):
         for item in self.file_list:
             if item.checkState() == Qt.CheckState.Checked:
                 self.log_area.append(f"Converting selected file: {item.text()}")
-                config.CopyToFolder(item.text())
-                generator.DoAllOpreater()
+                config.CopyToFolder(self.selectdir + "/" +  item.text())
+        generator.DoAllOpreater()
 
     def convert_all_files(self):
         for item in self.file_list:
             self.log_area.append(f"Converting all files: {item.text()}")
             config.CopyToFolder(item.text())
-            generator.DoAllOpreater()
+        generator.DoAllOpreater()
 
     def outputWritten(self, text):
         cursor = self.log_area.textCursor()
@@ -245,7 +245,7 @@ if __name__ == '__main__':
 #         log_scroll = QScrollArea()
 #         log_scroll.setWidgetResizable(True)
 #         log_scroll.setWidget(self.log_area)
-#         self.main_layout.addWidget(log_scroll)
+#         self.main_layout.addWidget(log_scroll)os
 #         self.setLayout(self.main_layout)
 
 #     def searchChange(self, text):

@@ -2,8 +2,7 @@ import re
 import subprocess
 import openpyxl
 from datetime import date, datetime
-import sys
-import os
+from pathlib import Path
 import shutil
 import time
 from ExcelParse import ExcelParse
@@ -34,7 +33,7 @@ def getProtocLanguage(language_sign):
 		return "--rust_out="
 
 def writeProto(excelparse):
-	proto_path = os.path.join(config.GetRootProto(), f"{excelparse.sheetName}.{config.scriptExtDict['proto']}")
+	proto_path = Path(config.GetRootProto()).joinpath(f"{excelparse.sheetName}.{config.scriptExtDict['proto']}")
 	write_str = protoFormat(excelparse)
 	config.writeFile(proto_path, write_str)
 def protoFormat(excelparse):
@@ -126,7 +125,7 @@ def readsheet(sheet):
 	row_data_table_code_str = protoTpl.getRowCode(row_table_name.upper(), variables_str)
 	# 组合列表代码字符串
 	group_data_table_code_str = protoTpl.getGroupcode(row_data_table_code_str, group_table_name.upper(), row_table_name.upper())
-	proto_path = os.path.join(config.GetRootProto(), f"{group_table_name}.{config.scriptExtDict['proto']}")
+	proto_path = Path(config.GetRootProto()).joinpath(f"{group_table_name}.{config.scriptExtDict['proto']}")
 	write_str = group_data_table_code_str #protoTpl.getProtoCode(group_data_table_code_str, row_data_table_code_str)
 	config.writeFile(proto_path, write_str)
 
@@ -139,7 +138,7 @@ def generate_target_file(protoDir,proto_file, target_path, language_sign):
 
 def generate_config(mod_name, config_file_root_path):
 	configcs_file_path = config.GetFullPathExtension(config_file_root_path, f"{mod_name}Config",config.scriptExtDict['configcs'])
-	configcs_file_path = configcs_file_path.replace('\\', '/')
+	configcs_file_path = str(configcs_file_path).replace('\\', '/')
 	if len(config.excelKeyDict) < 1:
 		print('异常退出: ',mod_name, ' 没有找到主键ID类型')
 		return
@@ -157,8 +156,7 @@ def generate_target(language_sign):
 	index = 0
 	for proto_file in protos:
 		index += 1
-		filename = os.path.basename(proto_file)
-		name, ext = os.path.splitext(filename)
+		name, ext = proto_file.stem, proto_file.suffix
 		ext = config.scriptExtDict[language_sign]
 		print(f"[{index}/{count}]  {target_path}\\{name}.{ext}")
 		if language_sign == 'configcs':
@@ -173,11 +171,10 @@ def genearte_excel_to_proto():
 	index =  1
 	count = len(excels)
 	for excel in excels:
-		filename = os.path.basename(excel)
-		name, ext = os.path.splitext(filename)
+		name, ext = excel.stem, excel.suffix
 		ext = config.scriptExtDict['proto']
 		print(f"[{index}/{count}]  {config.GetRootBytes()}\\{name}.{ext}")
-		excel_to_protonew(config.GetRootExcelFile(excel))
+		excel_to_protonew(str(excel))
 		index += 1
 
 def clean():

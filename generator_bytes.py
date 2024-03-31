@@ -1,8 +1,7 @@
 from ast import parse
 import openpyxl
 from datetime import date, datetime
-import sys
-import os
+from pathlib import Path
 import re
 import numpy as np
 from ExcelParse import ExcelParse
@@ -159,7 +158,7 @@ def generate_bytes(mod_name, excel_row_list):
 	bytes_file_root_path = config.GetRootBytes()
 	allRowCodes = get_list_data_code(excel_row_list)
 	byte_file_path = config.GetFullPathExtension(bytes_file_root_path, mod_name,config.scriptExtDict['bytes'])
-	byte_file_path = byte_file_path.replace('\\', '/')
+	byte_file_path = str(byte_file_path).replace('\\', '/')
 	code = bytesTpl.getPythonCode(f"{config.GEN_DIR_DICT['python']}.{mod_name}_pb2",mod_name, allRowCodes,byte_file_path)
 	# print(code)
 	# if os.path.exists(f"{mod_name}_pb.py"):
@@ -173,9 +172,10 @@ def generate_bytes(mod_name, excel_row_list):
 	except Exception as e:
 		print(e)
 		print('生成失败: ', byte_file_path)
-		if os.path.exists(f"{mod_name}_pb.py"):
-			os.remove(f"{mod_name}_pb.py")
-			file = open(f"{mod_name}_pb.py", 'a', encoding='utf-8')
+		pb = Path(f"{mod_name}_pb.py")
+		if pb.exists():
+			pb.unlink()
+			file = open(pb, 'a', encoding='utf-8')
 			file.write(code)
 			file.close()
 
@@ -221,7 +221,7 @@ def byteFormat(parse):
 	bytes_file_root_path = config.GetRootBytes()
 	allRowCodes = get_list_data_code_new(excel_row_list)
 	byte_file_path = config.GetFullPathExtension(bytes_file_root_path, mod_name,config.scriptExtDict['bytes'])
-	byte_file_path = byte_file_path.replace('\\', '/')
+	byte_file_path = str(byte_file_path).replace('\\', '/')
 	code = bytesTpl.getPythonCode(f"{config.GEN_DIR_DICT['python']}.{mod_name}_pb2",mod_name.upper(), allRowCodes,byte_file_path)
 	try:
 		exec(code)
@@ -246,11 +246,10 @@ def generate_all_excel_byte_data():
 	index =  1
 	count = len(excels)
 	for excel in excels:
-		filename = os.path.basename(excel)
-		name, ext = os.path.splitext(filename)
+		name, ext = excel.stem, excel.suffix
 		ext = config.scriptExtDict['bytes']
 		print(f"[{index}/{count}]  {config.GetRootBytes()}\\{name}.{ext}")
-		generate_excel_data_new(config.GetRootExcelFile(excel))
+		generate_excel_data_new(str(excel))
 		index += 1
 
 def run():

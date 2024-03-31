@@ -1,4 +1,3 @@
-import os
 
 pythonCode = """
 import sys

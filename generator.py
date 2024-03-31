@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 import re
 from shutil import copyfile
 import sys
@@ -11,7 +11,7 @@ def CopyToFolder(name, outDir,language_sign):
 	fext =config.scriptExtDict[language_sign]
 	From_path = config.getRootPathFileExtension(config.GEN_DIR_DICT[language_sign],name, fext)
 	To_path = config.getRootPathFileExtension(outDir, name, fext)
-	if  os.path.exists(From_path) :
+	if  From_path.exists() :
 			try:
 				copyfile(From_path, To_path)
 			except IOError as e:
@@ -25,7 +25,7 @@ def DoAllOpreater():
 	if len(excels) < 1:
 		input('No excel file found, input anykey to exit')
 		sys.exit(0)
-	excelnames = [f.split('.')[0] for f in excels]
+	excelnames = [f.stem for f in excels]
 	
 
 	genProto.run()		# 必须先生成代码
@@ -35,6 +35,7 @@ def DoAllOpreater():
 		CopyToFolder(name, config.getOutBytesDir(), 'bytes')
 		CopyToFolder(name, config.getOutputCSDir(), 'csharp')
 		CopyToFolder(f"{name}Config", config.getOutputConfigCSDir(), 'configcs')
+	print("Done")
 
 if __name__ == '__main__':
 	args = sys.argv[1:]

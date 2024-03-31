@@ -1,5 +1,3 @@
-import os
-
 row_code = """
 message %s {
     %s
