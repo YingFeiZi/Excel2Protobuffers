@@ -80,7 +80,7 @@ class ExcelParse:
             if not name_datacell.value:
                 continue
             name_data = name_datacell.value
-            if name_data == None or name_data.strip() == "": continue
+            if name_data == None or isinstance(name_data,str) and name_data.strip() == "": continue
             typecell = sheet.cell(self.keytyperow, col_num)
             if not typecell.value:
                 continue

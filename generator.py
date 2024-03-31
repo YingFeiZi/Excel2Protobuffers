@@ -20,13 +20,7 @@ def CopyToFolder(name, outDir,language_sign):
 # names =['cfg_activity_game']
 names =[]
 
-if __name__ == '__main__':
-	args = sys.argv[1:]
-	if len(args) >0:
-		names = [re.split(r"\.|-", name)[0] for name in args]
-		# print(names)
-	#从本地配置文件复制配置到工具目录
-	config.Init(names)
+def DoAllOpreater():
 	excels = config.GetFilesByExtension(config.GEN_DIR_DICT['xlsx'],config.scriptExtDict['xlsx'])
 	if len(excels) < 1:
 		input('No excel file found, input anykey to exit')
@@ -41,6 +35,15 @@ if __name__ == '__main__':
 		CopyToFolder(name, config.getOutBytesDir(), 'bytes')
 		CopyToFolder(name, config.getOutputCSDir(), 'csharp')
 		CopyToFolder(f"{name}Config", config.getOutputConfigCSDir(), 'configcs')
+
+if __name__ == '__main__':
+	args = sys.argv[1:]
+	if len(args) >0:
+		names = [re.split(r"\.|-", name)[0] for name in args]
+		# print(names)
+	#从本地配置文件复制配置到工具目录
+	config.Init(names)
+	DoAllOpreater()
 
 	# print('')
 	config.Quit()

@@ -187,6 +187,8 @@ def CheckExcelFile(file):
 
 def GetFilesByExtension(path, extension):
     return [f for f in os.listdir(path) if f.endswith(f".{extension}")]
+def GetFullFilesByExtension(path, extension):
+    return [GetFullPath(path, f) for f in os.listdir(path) if f.endswith(f".{extension}")]
 
 def GetFullPath(path, file):
 	return os.path.join(path, file)
@@ -248,7 +250,7 @@ def initIni():
     for section in customini.sections():
         for option, value in customini.items(section):
             CUSTOM_TYPES[option] = value
-    
+    clean_directory(GEN_DIR_DICT['xlsx'])
 
 def mkdir(path):
 	if not os.path.exists(path):
@@ -258,7 +260,15 @@ excelKeyDict = {}
 def Quit():
 	input("\nDone, input anykey to exit")
 	sys.exit(0)
-      
+
+def GetIniFiles(ext):
+    return GetFullFilesByExtension(ini['exceldir'], ext)
+def CopyToFolder(file):
+    name, ext = GetFileNameExt(file)
+    ext = ext.split(".")[1]
+    outputf = GetFullPathExtension(GEN_DIR_DICT['xlsx'], name, ext)
+    copyfile(file, outputf)
+    
 def Init(names):
 	initIni()
 	excelKeyDict = {}
@@ -266,7 +276,6 @@ def Init(names):
 		mkdir(GEN_DIR_DICT['xlsx'])
 	except FileExistsError:
 		pass
-	clean_directory(GEN_DIR_DICT['xlsx'])
 	ext = scriptExtDict['xlsx']
 	excels = GetFilesByExtension(ini['exceldir'], ext)
 	for file in excels:
@@ -274,7 +283,7 @@ def Init(names):
 		ext = ext.split(".")[1]
 		if (len(names)>0 and not name in names) or name.startswith('~'):
 			continue
-		input = GetFullPath(ini['exceldir'], file)
-		output = GetFullPathExtension(GEN_DIR_DICT['xlsx'], name, ext)
+		inputf = GetFullPath(ini['exceldir'], file)
+		outputf = GetFullPathExtension(GEN_DIR_DICT['xlsx'], name, ext)
 		# print(name, ext, input, output)
-		copyfile(input, output)
+		copyfile(inputf, outputf)
