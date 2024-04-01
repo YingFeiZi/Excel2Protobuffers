@@ -183,6 +183,7 @@ def generate_excel_data(excel_path):
 	wb = openpyxl.load_workbook(excel_path,True, False,True)
 	sheet = wb.active
 	read_excel_sheet(sheet)
+	wb.close()
 
 ##############################################################################################################################
 def get_list_data_code_new(excel_row_list):
@@ -254,5 +255,5 @@ def generate_all_excel_byte_data():
 		index += 1
 
 def run():
-	print('\n---------------- 将excel生成flatbuffers二进制数据 ----------------')
+	print('\n---------------- 将excel生成Protouf二进制数据 ----------------')
 	generate_all_excel_byte_data()

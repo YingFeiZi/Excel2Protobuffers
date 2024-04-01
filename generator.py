@@ -5,6 +5,7 @@ import sys
 import config
 import generator_proto as genProto
 import generator_bytes as genBytes
+import generator_csv as genCSV
 
 
 def CopyToFolder(name, outDir,language_sign):
@@ -34,7 +35,11 @@ def DoAllOpreater():
 		CopyToFolder(name, config.getOutBytesDir(), 'bytes')
 		CopyToFolder(name, config.getOutputCSDir(), 'csharp')
 		CopyToFolder(f"{name}Config", config.getOutputConfigCSDir(), 'configcs')
+	gcs = genCSV.excel2csv()
+	gcs.run()
 	print("Done")
+
+
 
 if __name__ == '__main__':
 	args = sys.argv[1:]

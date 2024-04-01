@@ -203,24 +203,30 @@ def GetFileNameExt(file):
 def clean_directory(target_path):
     # 确保目标路径是一个目录
     p = Path(target_path)
-    if not p.is_dir():
-        p.mkdir(parents=True)
-    
-    try:
-        # 遍历目录树删除所有文件
-        for file in p.iterdir():
-            if file.is_dir():
-                continue
-            file.unlink()
-			#print(f'清理文件: {file_path}')
-    except OSError:
-        # 提供更详细的错误信息
-        print('旧数据清理失败，可能有文件正在使用。请关掉已打开的文件并重试。')
+    # 检查路径是否存在并且是个目录
+
+    if p.exists() and p.is_dir():
+        # 遍历目录下的所有子文件和子目录
+        for child in p.glob('*'):
+            if child.is_file():
+                # 删除文件
+                try:
+                    child.unlink()
+                except OSError as err:
+                    print(f"An error occurred while deleting the file '{str(child)}': {err}")
+            elif child.is_dir():
+                # 递归删除子目录
+                clean_directory(child)
+        
+        # # 清空目录后删除该目录
+        # p.rmdir()
+
 def writeFile(path, context):
 	# 写入文件
 	# print(path)
-	with open(path, 'w', encoding='utf-8') as f:
-		f.write(context)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(str(path), 'w', encoding='utf-8') as f:
+        f.write(context)
 
 def initIni():
     confini = iniParse.ConfigParser()
@@ -271,6 +277,7 @@ def CopyToFolder(file):
     name, ext = GetFileNameExt(file)
     ext = ext.split(".")[1]
     outputf = GetFullPathExtension(GEN_DIR_DICT['xlsx'], name, ext)
+    outdir = outputf.parent.mkdir(parents=True, exist_ok=True)
     copyfile(file, outputf)
     
 def Init(names):

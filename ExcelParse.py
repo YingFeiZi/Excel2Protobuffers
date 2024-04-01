@@ -1,5 +1,3 @@
-import array
-from cgi import print_arguments
 import copy
 import re
 import openpyxl
@@ -77,6 +75,8 @@ class ExcelParse:
         self.wb = openpyxl.load_workbook(self.path,readOnly, False,True)
         self.sheet = self.wb.active
         self.readsheet(self.sheet)
+        self.wb.close()
+
     def readsheet(self, sheet):
         self.variableDict = [] 
         self.sheetName = sheet.title
