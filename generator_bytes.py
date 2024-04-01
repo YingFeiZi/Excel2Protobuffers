@@ -76,7 +76,7 @@ def read_excel_sheet(sheet):
 			print('存在相同的字段名: ', variable_name)
 			print('异常退出')
 			# sys.exit()
-			config.Quit()
+			return
 		if not config.CheckSupportType(row_type_data):
 			continue
 		variable_dict[variable_name] = row_type_data
@@ -237,7 +237,8 @@ def byteFormat(parse):
 def generate_excel_data_new(path):
 	parse = ExcelParse(path, config.TYPEROW, config.NAMEROW, config.DATAROW, config.PROTOTYPE, config.PROTOSHOW)
 	parse.readExcel()
-	byteFormat(parse)
+	if parse.isParseSuccess:
+		byteFormat(parse)
 
 ##############################################################################################################################
 

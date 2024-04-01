@@ -1,4 +1,5 @@
 import array
+from cgi import print_arguments
 import copy
 import re
 import openpyxl
@@ -34,6 +35,7 @@ class ExcelParse:
         self.keytyperow = typerow
         self.keynamerow = namerow
         self.datarow = datarow
+        self.isParseSuccess = False
     def trimDotZeroes(self,text):
         if isinstance(text, str):
             text = text.strip()
@@ -43,25 +45,31 @@ class ExcelParse:
     def get_real_value(self,data_type, raw_value):
         if not raw_value :
             return None
-        # print('data_type: ', data_type, 'raw_value:', raw_value)
+            # print('data_type: ', data_type, 'raw_value:', raw_value)
         trizv = self.trimDotZeroes(raw_value)
-        if data_type == 'string':
-            value = str(raw_value)
-            value = value.replace('\\', '\\\\')
-            return '''{}'''.format(value)
-        elif data_type in ExcelParse.arry32:
-            return np.int32(trizv) 
-        elif data_type in ExcelParse.arryu32:
-            return np.uint32(trizv) 
-        elif data_type in ExcelParse.arry64:
-            return np.int64(trizv) 
-        elif data_type in ExcelParse.arryu64:
-            return np.uint64(trizv)
-        elif data_type == 'float':
-            return float(raw_value)
-        elif data_type == 'bool':
-            return bool(raw_value)
-        else:
+        try:
+            npv = None
+            if data_type == 'string':
+                value = str(raw_value)
+                value = value.replace('\\', '\\\\')
+                npv = '''{}'''.format(value)
+            elif data_type in ExcelParse.arry32:
+                npv = np.int32(trizv) 
+            elif data_type in ExcelParse.arryu32:
+                npv = np.uint32(trizv) 
+            elif data_type in ExcelParse.arry64:
+                npv = np.int64(trizv) 
+            elif data_type in ExcelParse.arryu64:
+                npv = np.uint64(trizv)
+            elif data_type == 'float':
+                npv = float(raw_value)
+            elif data_type == 'bool':
+                npv = bool(raw_value)
+            else:
+                return None
+            return npv
+        except ValueError as e:
+            print(f"无法将 {trizv} 转换为 uint32 类型，ValueError: {e}")
             return None
     def readExcel(self, readOnly=False):
         if not config.CheckExcelFile(self.path):
@@ -90,13 +98,14 @@ class ExcelParse:
             row_type_data = config.GetCustomTypeValue(type_data)
             if variable_name in self.variableDict:
                 print('异常退出: ','表', self.sheetName, '存在相同的字段名: ', variable_name)
-                # sys.exit()
-                config.Quit()
+                self.isParseSuccess = False
+                return 
 
             if not config.CheckSupportType(row_type_data):
                 print('表', self.sheetName, '字段', variable_name, '的数据类型', row_type_data,'不在支持的列表中')
+                self.isParseSuccess = False
                 # continue
-                config.Quit()
+                return
 
             prototypecell = sheet.cell(self.prototype, col_num)
             prototype = prototypecell.value
@@ -130,3 +139,4 @@ class ExcelParse:
                 cell.row = rowcell.row
                 single_row_data.append(cell)
             self.sheet_row_data_list.append(single_row_data)
+        self.isParseSuccess = True

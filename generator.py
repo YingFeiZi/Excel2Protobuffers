@@ -23,8 +23,7 @@ names =[]
 def DoAllOpreater():
 	excels = config.GetFilesByExtension(config.GEN_DIR_DICT['xlsx'],config.scriptExtDict['xlsx'])
 	if len(excels) < 1:
-		input('No excel file found, input anykey to exit')
-		sys.exit(0)
+		return
 	excelnames = [f.stem for f in excels]
 	
 
@@ -40,11 +39,13 @@ def DoAllOpreater():
 if __name__ == '__main__':
 	args = sys.argv[1:]
 	if len(args) >0:
-		names = [re.split(r"\.|-", name)[0] for name in args]
+		# names = [re.split(r"\.|-", name)[0] for name in args]
+		names = [Path(name).stem for name in args]
 		# print(names)
 	#从本地配置文件复制配置到工具目录
 	config.Init(names)
 	DoAllOpreater()
 
+	input("\nDone, input anykey to exit")
 	# print('')
 	config.Quit()

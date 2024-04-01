@@ -1,10 +1,11 @@
 import sys
+import subprocess
 from pathlib import Path
 # from PyQt6.QtCore import *
 # from PyQt6.QtGui import *
 # from PyQt6.QtWidgets import *
-from PyQt6.QtGui import QTextCursor
-from PyQt6.QtCore import Qt, QEventLoop,QObject,pyqtSignal,QTimer
+from PyQt6.QtGui import QTextCursor,QDesktopServices
+from PyQt6.QtCore import Qt, QEventLoop,QObject,pyqtSignal,QTimer,QUrl
 from PyQt6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -17,7 +18,10 @@ from PyQt6.QtWidgets import (
     QFileDialog,
     QLineEdit,
     QLabel,
+    QSizePolicy,
 )
+from datetime import datetime
+import warnings
 import config
 import generator
 
@@ -28,21 +32,26 @@ class EmittingStr(QObject):
         loop = QEventLoop()
         QTimer.singleShot(10, loop.quit)
         loop.exec()
+    def SetContent(self, content):
+        self.textWriten.connect(content)
 
 class FileConverterApp(QWidget):
     def __init__(self):
         super().__init__()
         sys.stdout = EmittingStr()
-        sys.stdout.textWriten.connect(self.outputWritten)
+        sys.stdout.SetContent(self.outputWritten)
         sys.stderr = EmittingStr()
-        sys.stderr.textWriten.connect(self.outputWritten)
+        sys.stderr.SetContent(self.outputWritten)
         config.initIni()
         self.selectdir = config.ini['exceldir']
-        self.setWindowTitle("File Converter")
-        self.setFixedSize(700, 520)
+        self.setWindowTitle(f"File Converter")
+        self.resize(700, 520)
         # self.setGeometry(0, 0, 700, 520)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.searchlist =[]
+        self.checkList = []
         self.file_list = []
+        self.full_files = []
         main_layout = QVBoxLayout()
         search_layout = QHBoxLayout()
         search_label = QLabel("搜索：")
@@ -56,7 +65,10 @@ class FileConverterApp(QWidget):
         # 上方区域：滚动视图包含文件列表，按文件最后修改时间排序
         scroll_area = QScrollArea()
         scroll_widget = QWidget()
+        scroll_widget.setContentsMargins(0, 0, 0, 0)
         self.scroll_layout = QVBoxLayout()
+        self.scroll_layout.setContentsMargins(0, 0, 0, 0)
+        self.scroll_layout.setSpacing(0)
         self.scroll_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.refresh_files()
         # scroll_layout.addWidget(self.file_list)
@@ -70,15 +82,19 @@ class FileConverterApp(QWidget):
         button_layout = QHBoxLayout()
 
         reset_path_button = QPushButton("重选路径")
+        reset_path_button.clicked.connect(self.buttonresetpath)
         button_layout.addWidget(reset_path_button)
 
         refresh_button = QPushButton("刷新")
+        refresh_button.clicked.connect(self.buttonrefresh)
         button_layout.addWidget(refresh_button)
 
         convert_selected_button = QPushButton("转换选中")
+        convert_selected_button.clicked.connect(self.convert_selected_files)
         button_layout.addWidget(convert_selected_button)
 
         convert_all_button = QPushButton("转换全部")
+        convert_all_button.clicked.connect(self.convert_all_files)
         button_layout.addWidget(convert_all_button)
 
         main_layout.addLayout(button_layout)
@@ -93,10 +109,6 @@ class FileConverterApp(QWidget):
         self.setLayout(main_layout)
         
         #connect Signal
-        reset_path_button.clicked.connect(self.buttonresetpath)
-        refresh_button.clicked.connect(self.buttonrefresh)
-        convert_selected_button.clicked.connect(self.convert_selected_files)
-        convert_all_button.clicked.connect(self.convert_all_files)
 
     def searchChange(self, text):
         self.refresh_files(text)
@@ -108,35 +120,142 @@ class FileConverterApp(QWidget):
         if file_dialog.exec():
             self.selectdir = file_dialog.selectedFiles()[0]
             self.refresh_files()
+        self.clear_log()
+        
     def buttonrefresh(self):
         self.refresh_files(self.search_text.text())
+        self.clear_log()
+
+    def clear_log(self):
+        self.log_area.clear()
 
     def refresh_files(self, search=""):
-        # Add your refresh files logic here
-        fs = config.GetFullFilesByExtension(self.selectdir, config.scriptExtDict['xlsx'])
-        searchfs = [f for f in fs if search in str(f).split("\\")[-1] or search in str(f).split("\\")[-1].lower()]
-        self.searchlist = sorted(searchfs, key=lambda x: Path(x).stat().st_mtime, reverse=False)
+        self.full_files.clear()
+        self.full_files = config.GetFullFilesByExtension(self.selectdir, config.scriptExtDict['xlsx'])
+        searchfs = self.filter_files_by_search(self.full_files, search)
+        self.searchlist = self.sort_files_by_mtime(searchfs)
+        self.update_file_list()
+
+    def filter_files_by_search(self, files, search):
+        """根据搜索关键字过滤文件列表"""
+        if search == None or search == '':
+            return files
+        search_terms = search.lower().split()
+        return [f for f in files if any(term in str(f).lower() for term in search_terms)]
+
+    def sort_files_by_mtime(self, files):
+        """根据文件的修改时间对文件列表进行排序"""
+        return sorted(files, key=lambda x: Path(x).stat().st_mtime, reverse=True)
+
+    def update_file_list(self):
+        """更新文件列表UI"""
+        # 先清除旧的文件列表项
+        self.clear_file_list()
+
+        # 尝试获取并处理每个文件的信息，优化性能和异常处理
+        file_info = self.get_file_info(self.searchlist)
+
+        # 添加新的文件列表项
+        index=0
+        for file_path, file_name, last_time in file_info:
+            index=index+1
+            self.add_file_to_list(file_path, file_name, last_time, index)
+
+    def clear_file_list(self):
+        """清除文件列表UI"""
         for box in self.file_list:
             self.scroll_layout.removeWidget(box)
         self.file_list.clear()
+        self.checkList.clear()
 
-        for file in self.searchlist:
-            item = QCheckBox()
-            item.setText(file.name)
-            self.file_list.append(item)
-            self.scroll_layout.addWidget(item)
+    def get_file_info(self, searchlist):
+        """批量获取文件信息，优化性能"""
+        file_info = []
+        try:
+            for file in searchlist:
+                pf = Path(file)
+                if pf.is_file():
+                    lasttime = pf.stat().st_mtime
+                    file_info.append((file, pf.name, lasttime))
+        except Exception as e:
+            print(f"Error accessing file system: {e}")
+        return file_info
+
+    def add_file_to_list(self, file_path, file_name, last_time, index):
+        """向文件列表UI添加一个文件"""
+        layitem = QHBoxLayout()
+        layitem.setContentsMargins(4, 0, 4, 0)
+        item = QCheckBox()
+        item.setText(file_name)
+        item.stateChanged.connect(lambda state: self.check_box_state_changed(state, file_name))
+        layitem.addWidget(item)
+        
+        label = QLabel()
+        label.setLineWidth(120)
+        label.setText(datetime.fromtimestamp(last_time).strftime("%Y-%m-%d %H:%M:%S"))
+        layitem.addWidget(label)
+        
+        btnChange = QPushButton("转换")
+        btnChange.setFixedWidth(60)
+        btnChange.clicked.connect(lambda checked: self.convert_file(file_name=file_name))
+        layitem.addWidget(btnChange)
+        
+        btnOpen = QPushButton("打开")
+        btnOpen.setFixedWidth(60)
+        btnOpen.clicked.connect(lambda checked: self.open_folder_with_file(path_to_file=file_path))
+        layitem.addWidget(btnOpen)
+
+        widget = QWidget()
+        if index%2==0:
+            widget.setStyleSheet("background-color: #CDCDCD;")
+        else:
+            widget.setStyleSheet("background-color: #ffffff;")
+        widget.setFixedHeight(30)
+        widget.setContentsMargins(0, 0, 0, 0)
+        widget.setLayout(layitem)
+        self.file_list.append(widget)
+        self.scroll_layout.addWidget(widget)
+
+    def check_box_state_changed(self, state, filename):
+        # 状态改变时的操作
+
+        if state:
+            self.checkList.append(filename)
+        else:
+            self.checkList.remove(filename)
+
+    def convert_file(self, file_name):
+        # 文件转换操作
+
+        self.log_area.append(f"Converting selected file: {file_name}")
+        config.cleanExcel()
+        config.CopyToFolder(self.selectdir + "/" +  file_name)
+        generator.DoAllOpreater()
+        
+    def open_folder_with_file(self,path_to_file):
+        # 打开包含文件的文件夹
+
+        # folder_path = str(Path(path_to_file).parent)  # 获取文件所在的目录
+        # QDesktopServices.openUrl(QUrl.fromLocalFile(folder_path))
+        command = f"explorer.exe /select, {path_to_file}"
+        subprocess.call(command, shell=True)
 
     def convert_selected_files(self):
-        for item in self.file_list:
-            if item.checkState() == Qt.CheckState.Checked:
-                self.log_area.append(f"Converting selected file: {item.text()}")
-                config.CopyToFolder(self.selectdir + "/" +  item.text())
+        config.cleanExcel()
+        if len(self.checkList) < 1:
+            print("No files selected for conversion.")
+            return
+        for item in self.checkList:
+            self.log_area.append(f"Converting selected file: {item}")
+            config.CopyToFolder(f"{self.selectdir}/{item}")
         generator.DoAllOpreater()
 
     def convert_all_files(self):
-        for item in self.file_list:
-            self.log_area.append(f"Converting all files: {item.text()}")
-            config.CopyToFolder(item.text())
+        config.cleanExcel()
+        for item in self.full_files:
+            p = Path(item)
+            self.log_area.append(f"Converting all files: {p.name}")
+            config.CopyToFolder(p.name)
         generator.DoAllOpreater()
 
     def outputWritten(self, text):
@@ -146,163 +265,26 @@ class FileConverterApp(QWidget):
         self.log_area.setTextCursor(cursor)
         self.log_area.ensureCursorVisible()
 
+class EmittingWarring(QObject):
+    textWriten = pyqtSignal(str)
+
+    def showwarning(self, message, category, filename, lineno, file=None, line=None):
+        formatted_message = f"{category.__name__}: {message} \n位置: {filename}:{lineno}"
+        self.textWriten.emit(str(formatted_message))
+        loop = QEventLoop()
+        QTimer.singleShot(10, loop.quit)
+        loop.exec()
+    def SetContent(self, content):
+        self.textWriten.connect(content)
+        warnings.showwarning = self.showwarning
+
 if __name__ == '__main__':
+    # 或者禁用所有来自某个模块的警告
+    warnings.filterwarnings("ignore")
+
     app = QApplication(sys.argv)
     converter_app = FileConverterApp()
+    waring = EmittingWarring()
+    waring.SetContent(converter_app.outputWritten)
     converter_app.show()
     sys.exit(app.exec())
-
-
-# import sys
-# import os
-# import config
-# import generator
-# from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer,QObject,QEventLoop
-# from PyQt6.QtGui import QTextCursor
-# from PyQt6.QtWidgets import (
-#     QApplication,
-#     QCheckBox,
-#     QPushButton,
-#     QVBoxLayout,
-#     QHBoxLayout,
-#     QScrollArea,
-#     QFileDialog,
-#     QLineEdit,
-#     QLabel,
-#     QWidget,
-#     QTextEdit,
-# )
-
-# class EmittingStr(QObject):
-#     textWriten = pyqtSignal(str)
-
-#     def write(self, text):
-#         self.textWriten.emit(str(text))
-#         loop = QEventLoop()
-#         QTimer.singleShot(10, loop.quit)
-#         loop.exec()
-
-
-# class FileConverterApp(QWidget):
-#     def __init__(self):
-#         super().__init__()
-#         config.initIni()
-#         self.selectdir = config.ini['exceldir']
-#         self.setWindowTitle("File Converter")
-#         self.setFixedSize(700, 520)
-#         self.searchlist = []
-#         self.file_list = []
-#         self.main_layout = QVBoxLayout()
-#         self.initUI()
-#         sys.stdout = EmittingStr()
-#         sys.stdout.textWriten.connect(self.outputWritten)
-#         sys.stderr = EmittingStr()
-#         sys.stderr.textWriten.connect(self.outputWritten)
-
-#     def initUI(self):
-#         # UI components setup
-#         search_layout = QHBoxLayout()
-#         search_label = QLabel("搜索：")
-#         search_label.setFixedWidth(100)
-#         search_layout.addWidget(search_label)
-#         self.search_text = QLineEdit()
-#         self.search_text.textChanged.connect(self.searchChange)
-#         search_layout.addWidget(self.search_text)
-#         self.main_layout.addLayout(search_layout)
-
-#         self.scroll_area = QScrollArea()
-#         self.scroll_widget = QWidget()
-#         self.scroll_layout = QVBoxLayout()
-#         self.scroll_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-#         self.refresh_files()
-#         self.scroll_widget.setLayout(self.scroll_layout)
-#         self.scroll_area.setWidget(self.scroll_widget)
-#         self.scroll_area.setWidgetResizable(True)
-#         self.main_layout.addWidget(self.scroll_area)
-
-#         self.button_layout = QHBoxLayout()
-
-#         reset_path_button = QPushButton("重选路径")
-#         reset_path_button.clicked.connect(self.reset_path)
-#         self.button_layout.addWidget(reset_path_button)
-
-#         refresh_button = QPushButton("刷新")
-#         refresh_button.clicked.connect(self.refresh_files)
-#         self.button_layout.addWidget(refresh_button)
-
-#         convert_selected_button = QPushButton("转换选中")
-#         convert_selected_button.clicked.connect(self.convert_selected_files)
-#         self.button_layout.addWidget(convert_selected_button)
-
-#         convert_all_button = QPushButton("转换全部")
-#         convert_all_button.clicked.connect(self.convert_all_files)
-#         self.button_layout.addWidget(convert_all_button)
-
-#         self.main_layout.addLayout(self.button_layout)
-
-#         self.log_area = QTextEdit()
-#         self.log_area.setReadOnly(True)
-#         log_scroll = QScrollArea()
-#         log_scroll.setWidgetResizable(True)
-#         log_scroll.setWidget(self.log_area)
-#         self.main_layout.addWidget(log_scroll)os
-#         self.setLayout(self.main_layout)
-
-#     def searchChange(self, text):
-#         self.refresh_files(search=text)
-
-#     def reset_path(self):
-#         file_dialog = QFileDialog()
-#         file_dialog.setFileMode(QFileDialog.FileMode.Directory)
-#         if file_dialog.exec():
-#             self.selectdir = file_dialog.selectedFiles()[0]
-#             self.refresh_files()
-
-#     def refresh_files(self, search=""):
-#         # Simplified and optimized file listing
-#         fs = config.GetFullFilesByExtension(self.selectdir, config.scriptExtDict['xlsx'])
-#         searchfs = [f for f in fs if search in f or search in f.lower()]
-#         self.searchlist = sorted(searchfs, key=os.path.getmtime, reverse=False)
-#         self.updateFileList()
-
-#     def updateFileList(self):
-#         for box in self.file_list:
-#             self.scroll_layout.removeWidget(box)
-#         self.file_list.clear()
-
-#         for file in self.searchlist:
-#             item = QCheckBox()
-#             item.setText(os.path.abspath(file))
-#             self.file_list.append(item)
-#             self.scroll_layout.addWidget(item)
-
-#     def convert_selected_files(self):
-#         selected_files = [file for file in self.file_list if file.checkState() == Qt.CheckState.Checked]
-#         self.convert_files(selected_files)
-
-#     def convert_all_files(self):
-#         self.convert_files(self.file_list)
-
-#     def convert_files(self, files_to_convert):
-#         for file in files_to_convert:
-#             self.log_area.append(f"Converting file: {file.text()}")
-#             try:
-#                 config.CopyToFolder(file.text())
-#                 generator.DoAllOpreater()
-#             except Exception as e:
-#                 self.log_area.append(f"Error converting {file.text()}: {str(e)}")
-
-#     def outputWritten(self, text):
-#         cursor = self.log_area.textCursor()
-#         cursor.movePosition(QTextCursor.MoveOperation.End)
-#         cursor.insertText(text)
-#         self.log_area.setTextCursor(cursor)
-#         self.log_area.ensureCursorVisible()
-
-
-
-# if __name__ == '__main__':
-#     app = QApplication(sys.argv)
-#     converter_app = FileConverterApp()
-#     converter_app.show()
-#     sys.exit(app.exec())

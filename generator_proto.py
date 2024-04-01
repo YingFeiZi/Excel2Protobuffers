@@ -61,8 +61,10 @@ def protoFormat(excelparse):
 def excel_to_protonew(excel_path):
 	excelparse = ExcelParse(excel_path, config.TYPEROW, config.NAMEROW, config.DATAROW, config.PROTOTYPE, config.PROTOSHOW)
 	excelparse.readExcel()
-	writeProto(excelparse)
+	if excelparse.isParseSuccess:
+		writeProto(excelparse)
 
+"""
 def excel_to_proto(excel_path):
 	wb = openpyxl.load_workbook(excel_path,True, False,True)
 	sheet = wb.active
@@ -95,12 +97,12 @@ def readsheet(sheet):
 		if variable_name in variable_dict:
 			print('异常退出: ','表', sheet_name, '存在相同的字段名: ', variable_name)
 			# sys.exit()
-			config.Quit()
+			return
 
 		if not config.CheckSupportType(row_type_data):
 			print('表', sheet_name, '字段', variable_name, '的数据类型', row_type_data,'不在支持的列表中')
 			# continue
-			config.Quit()
+			return
 
 		if col_num == 1:
 			data_dict = {
@@ -128,7 +130,7 @@ def readsheet(sheet):
 	proto_path = Path(config.GetRootProto()).joinpath(f"{group_table_name}.{config.scriptExtDict['proto']}")
 	write_str = group_data_table_code_str #protoTpl.getProtoCode(group_data_table_code_str, row_data_table_code_str)
 	config.writeFile(proto_path, write_str)
-
+"""
 def generate_target_file(protoDir,proto_file, target_path, language_sign):
 	filename,ext = config.GetFileNameExt(proto_file)
 	languageOut = getProtocLanguage(language_sign)

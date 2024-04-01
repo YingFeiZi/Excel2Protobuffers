@@ -209,6 +209,8 @@ def clean_directory(target_path):
     try:
         # 遍历目录树删除所有文件
         for file in p.iterdir():
+            if file.is_dir():
+                continue
             file.unlink()
 			#print(f'清理文件: {file_path}')
     except OSError:
@@ -249,7 +251,9 @@ def initIni():
     for section in customini.sections():
         for option, value in customini.items(section):
             CUSTOM_TYPES[option] = value
-    clean_directory(GEN_DIR_DICT['xlsx'])
+    cleanExcel()
+def cleanExcel():
+    clean_directory(getRootPath(GEN_DIR_DICT['xlsx']))
 
 def mkdir(path):
     p = Path(path)
@@ -259,7 +263,6 @@ def mkdir(path):
 excelKeyDict = {}
 
 def Quit():
-	input("\nDone, input anykey to exit")
 	sys.exit(0)
 
 def GetIniFiles(ext):
@@ -284,7 +287,7 @@ def Init(names):
 		ext = ext.split(".")[1]
 		if (len(names)>0 and not name in names) or name.startswith('~'):
 			continue
-		inputf = GetFullPath(ini['exceldir'], file)
+		inputf = file
 		outputf = GetFullPathExtension(GEN_DIR_DICT['xlsx'], name, ext)
-		# print(name, ext, input, output)
+		# print(name, ext, input, outputf)
 		copyfile(inputf, outputf)
