@@ -203,6 +203,7 @@ def GetFileNameExt(file):
 def clean_directory(target_path):
     # 确保目标路径是一个目录
     p = Path(target_path)
+    p.mkdir(parents=True, exist_ok=True)
     # 检查路径是否存在并且是个目录
 
     if p.exists() and p.is_dir():
