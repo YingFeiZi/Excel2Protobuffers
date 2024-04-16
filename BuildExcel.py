@@ -1,3 +1,4 @@
+import imp
 import sys
 import subprocess
 from pathlib import Path
@@ -24,6 +25,15 @@ from datetime import datetime
 import warnings
 import config
 import generator
+from google.protobuf import descriptor as _descriptor
+from google.protobuf import message as _message
+from google.protobuf import reflection as _reflection
+from google.protobuf import symbol_database as _symbol_database
+from google.protobuf import descriptor_pb2
+dec = _descriptor.Error()
+mes = _message.Message()
+ref = _reflection.GeneratedProtocolMessageType
+sym = _symbol_database.Default()
 
 class EmittingStr(QObject):
     textWriten = pyqtSignal(str)
@@ -280,7 +290,7 @@ class EmittingWarring(QObject):
 
 if __name__ == '__main__':
     # 或者禁用所有来自某个模块的警告
-    warnings.filterwarnings("ignore")
+    # warnings.filterwarnings("ignore")
 
     app = QApplication(sys.argv)
     converter_app = FileConverterApp()

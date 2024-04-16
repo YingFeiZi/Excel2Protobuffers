@@ -3,9 +3,8 @@ import csv
 from pathlib import Path
 import openpyxl
 import config
-from PyQt6.QtCore import QObject
 
-class excel2csv(QObject):
+class excel2csv():
     def __init__(self):
         self.output_dir = config.ini['datadir']
         self.input_start = int(config.ini['xlsstar'])
@@ -59,7 +58,7 @@ class excel2csv(QObject):
         """
         return "\033[98m {}\033[00m".format(text)
 
-    def LogTableInfo(f, row, col, log=""):
+    def LogTableInfo(self, f, row, col, log=""):
         str1 = f"ERROR:  {row} row {col} col, Value: {log}"
         # print(str1)
         file = open("errorTable.txt", 'a')
@@ -114,7 +113,7 @@ class excel2csv(QObject):
         return error_count
 
     def run(self):
-        print('\n---------------- 将excel生成CSV数据 ----------------')
+        print('---------------- 将excel生成CSV数据 ----------------')
         excels = config.GetFilesByExtension(config.GEN_DIR_DICT['xlsx'],config.scriptExtDict['xlsx'])
         index =  1
         count = len(excels)

@@ -1,5 +1,6 @@
-from ast import parse
+import sys
 import openpyxl
+import google.protobuf
 from datetime import date, datetime
 from pathlib import Path
 import re
@@ -7,6 +8,9 @@ import numpy as np
 from ExcelParse import ExcelParse
 import config
 import bytesTpl
+import importlib
+sys.path.append(f"{Path.cwd()}")
+# sys.path.append(f"{Path.cwd().joinpath('../Python3.11.7/Lib/site-packages')}")
 
 ARRAY_SPLITTER = '#'
 arry32 = ['int', 'int32', 'sint32', 'sfixed32']
@@ -46,80 +50,6 @@ def trimDotZeroes(text):
 		return re.sub("\.0+$", "", text)
 	return text
 
-def read_excel_sheet(sheet):
-	variable_dict = {}
-	variable_index = {}
-	variable_defaultValue_dict = {}
-	sheet_name = sheet.title
-	mod_name = sheet_name
-	data_col_count = sheet.max_column#列数
-	for col_num in range(0, data_col_count):
-		col_num += 1
-		namecell  = sheet._get_cell(config.NAMEROW, col_num)
-		if not namecell.value:
-			continue
-		name_data = str(namecell.value)
-		if name_data == None or name_data.strip() == "": continue
-
-		if name_data =='getway':
-			pass
-
-		typecell  = sheet._get_cell(config.TYPEROW, col_num)
-		if not typecell.value:
-			continue
-		type_data = str(typecell.value).split(':')
-		if name_data == None or type_data[0].strip() == "": continue
-
-		variable_name = name_data[0].upper() + name_data[1:]
-		row_type_data = config.GetCustomTypeValue(type_data[0])
-		if variable_name in variable_dict:
-			print('存在相同的字段名: ', variable_name)
-			print('异常退出')
-			# sys.exit()
-			return
-		if not config.CheckSupportType(row_type_data):
-			continue
-		variable_dict[variable_name] = row_type_data
-		variable_index[variable_name] = col_num
-		
-		typeLen = len(type_data)
-		if typeLen == 2:
-			variable_defaultValue_dict[variable_name] = type_data[1]
-			print(variable_name,"此处有默认值")
-		else:
-			variable_defaultValue_dict[variable_name] = "NULL"
-
-	data_row_count = sheet.max_row
-
-	sheet_row_data_list = []
-	for row_data in sheet.iter_rows(min_row=config.DATAROW, max_row=data_row_count, min_col=1, max_col=data_col_count):
-		# 存储每一个字段的字段名，数值，类型
-		single_row_data = []
-		
-		for variable_name in variable_dict:
-			variable_type = variable_dict[variable_name]
-			index = variable_index[variable_name]
-			#print(variable_name, variable_type, row_data[index].value)
-			variable_value = get_real_value(variable_type, row_data[index -1].value)
-			variable_def_calue = variable_defaultValue_dict[variable_name]
-			if variable_def_calue == "NULL":
-				variable_def_calue = variable_defaultValue_dict[variable_name]
-			else:
-				variable_def_calue = get_real_value(variable_type, variable_def_calue)
-				if variable_def_calue != variable_value:
-					variable_def_calue = "NULL"
-			# print(variable_name, variable_type, variable_value)
-			index += 1
-			data_dict = {
-				'field_name': variable_name,
-				'field_value': variable_value,
-				'field_type': variable_type,
-				'field_def': variable_def_calue
-			}
-			single_row_data.append(data_dict)
-		sheet_row_data_list.append(single_row_data)
-	generate_bytes(mod_name, sheet_row_data_list)
-
 def get_single_data_code(index, row_data):
 	variable_create_code = ''
 	for field in row_data:
@@ -154,37 +84,6 @@ def get_list_data_code(excel_row_list):
 		index += 1
 	return allRowCodes
 
-def generate_bytes(mod_name, excel_row_list):
-	bytes_file_root_path = config.GetRootBytes()
-	allRowCodes = get_list_data_code(excel_row_list)
-	byte_file_path = config.GetFullPathExtension(bytes_file_root_path, mod_name,config.scriptExtDict['bytes'])
-	byte_file_path = str(byte_file_path).replace('\\', '/')
-	code = bytesTpl.getPythonCode(f"{config.GEN_DIR_DICT['python']}.{mod_name}_pb2",mod_name, allRowCodes,byte_file_path)
-	# print(code)
-	# if os.path.exists(f"{mod_name}_pb.py"):
-	# 	os.remove(f"{mod_name}_pb.py")
-	# file = open(f"{mod_name}_pb.py", 'a', encoding='utf-8')
-	# file.write(code)
-	# file.close()
-	try:
-		exec(code)
-		# print('生成成功: ', byte_file_path)
-	except Exception as e:
-		print(e)
-		print('生成失败: ', byte_file_path)
-		pb = Path(f"{mod_name}_pb.py")
-		if pb.exists():
-			pb.unlink()
-			file = open(pb, 'a', encoding='utf-8')
-			file.write(code)
-			file.close()
-
-def generate_excel_data(excel_path):
-	wb = openpyxl.load_workbook(excel_path,True, False,True)
-	sheet = wb.active
-	read_excel_sheet(sheet)
-	wb.close()
-
 ##############################################################################################################################
 def get_list_data_code_new(excel_row_list):
 	allRowCodes=''
@@ -198,6 +97,9 @@ def get_list_data_code_new(excel_row_list):
 def get_single_data_code_new(index, row_data):
 	variable_create_code = ''
 	for data in row_data:
+		if not data.isShow():
+			continue
+
 		fvalue = data.value
 		if fvalue == None and len(data.arrayvalue) < 1:
 			continue
@@ -223,8 +125,20 @@ def byteFormat(parse):
 	allRowCodes = get_list_data_code_new(excel_row_list)
 	byte_file_path = config.GetFullPathExtension(bytes_file_root_path, mod_name,config.scriptExtDict['bytes'])
 	byte_file_path = str(byte_file_path).replace('\\', '/')
-	code = bytesTpl.getPythonCode(f"{config.GEN_DIR_DICT['python']}.{mod_name}_pb2",mod_name.upper(), allRowCodes,byte_file_path)
+	code = bytesTpl.getPythonCode(config.GEN_DIR_DICT['python'], f"{mod_name}_pb2",mod_name.upper(), allRowCodes,byte_file_path)
+
+	# config.writeFile(f"{mod_name}_pb2.py", code)
+	# try:
+	# 	module = importlib.import_module(f"{mod_name}_pb2")
+	# except ImportError as e:
+	# 	print(f"Failed to import {mod_name}_pb2: {e}")
+	# else:
+	# 	module.Write()
+	# return
+
 	try:
+		# print(f"{str(Path.cwd())}\\{mod_name}.py")
+		# config.writeFile(f"{mod_name}.py", code)
 		exec(code)
 	except Exception as e:
 		print(e)
@@ -255,5 +169,7 @@ def generate_all_excel_byte_data():
 		index += 1
 
 def run():
-	print('\n---------------- 将excel生成Protouf二进制数据 ----------------')
+	print('---------------- 将excel生成Protouf二进制数据 ----------------')
+	# for p in sys.path:
+	# 	print(p)
 	generate_all_excel_byte_data()

@@ -215,9 +215,9 @@ def clean_directory(target_path):
                     child.unlink()
                 except OSError as err:
                     print(f"An error occurred while deleting the file '{str(child)}': {err}")
-            elif child.is_dir():
-                # 递归删除子目录
-                clean_directory(child)
+            # elif child.is_dir():
+            #     # 递归删除子目录
+            #     clean_directory(child)
         
         # # 清空目录后删除该目录
         # p.rmdir()
@@ -225,7 +225,8 @@ def clean_directory(target_path):
 def writeFile(path, context):
 	# 写入文件
 	# print(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
+    p = Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
     with open(str(path), 'w', encoding='utf-8') as f:
         f.write(context)
 
@@ -259,6 +260,8 @@ def initIni():
         for option, value in customini.items(section):
             CUSTOM_TYPES[option] = value
     cleanExcel()
+    # sys.path.append(f"{Path.cwd()}")
+    
 def cleanExcel():
     clean_directory(getRootPath(GEN_DIR_DICT['xlsx']))
 

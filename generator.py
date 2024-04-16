@@ -18,8 +18,8 @@ def CopyToFolder(name, outDir,language_sign):
 			except IOError as e:
 				print(f"--->ERROR: An error occurred while copying {name}.bytes or {name}.cs: {e}")
 
-# names =['cfg_activity_game']
-names =[]
+names =['cfg_aid_upgrades']
+# names =[]
 
 def DoAllOpreater():
 	excels = config.GetFilesByExtension(config.GEN_DIR_DICT['xlsx'],config.scriptExtDict['xlsx'])

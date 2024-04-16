@@ -1,14 +1,28 @@
 
+import sys
+
+# pythonCode = """
+# import sys
+# from {pymodule} import {tablepb} as {table}
+
+# dataArray = {table}.{table}ARRAY()
+
+# {allRowCodes}
+
+# with open('{ByteFilePath}', 'wb') as f:
+# 	f.write(dataArray.SerializeToString())
+# """
 pythonCode = """
 import sys
-import {tablepb} as {table}
+from {pymodule} import {tablepb} as {table}
 
 dataArray = {table}.{table}ARRAY()
 
 {allRowCodes}
 
-with open('{ByteFilePath}', 'wb') as f:
-	f.write(dataArray.SerializeToString())
+def Write():
+    with open('{ByteFilePath}', 'wb') as f:
+        f.write(dataArray.SerializeToString())
 """
 
 addRowCode = """
@@ -30,5 +44,5 @@ def getRowCode(index, type, variable, isString = False, isRepeated = False):
 def getAddRowCode(idx, rowcodes):
     return addRowCode.format(index=idx, rowcodes=rowcodes)
 
-def getPythonCode(tablepy, table, allRowCodes, ByteFilePath):
-    return pythonCode.format(tablepb=tablepy, table = table, allRowCodes=allRowCodes, ByteFilePath=ByteFilePath)
+def getPythonCode(module, tablepy, table, allRowCodes, ByteFilePath):
+    return pythonCode.format(pymodule = module, tablepb=tablepy, table = table, allRowCodes=allRowCodes, ByteFilePath=ByteFilePath)

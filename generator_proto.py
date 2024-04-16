@@ -46,7 +46,7 @@ def protoFormat(excelparse):
 		if variable.isRepeated():
 			substr = f"repeated {data_type}"
 		if not variable.isShow():
-			substr +="//"
+			substr ="//"+substr
 		variables_str += protoTpl.getRowLineCore(substr, variable.name, index)
 		index += 1
 
@@ -187,11 +187,11 @@ def run():
 	#print('---------------- 清理旧文件 ----------------')
 	clean()
 
-	print("\n---------------- 生成Proto文件, 生成不同语言代码 ----------------")
+	print("---------------- 生成Proto文件, 生成不同语言代码 ----------------")
 	genearte_excel_to_proto()
-	print("\n---------------- 开始生成 python代码 ----------------")
+	print("---------------- 开始生成 python代码 ----------------")
 	generate_target('python')	# 生成Python代码是必须的，因为要用来打包数据
-	print("\n---------------- 开始生成 csharp 代码 ----------------")
+	print("---------------- 开始生成 csharp 代码 ----------------")
 	generate_target('csharp')
 	# print("\n---------------- 开始生成 config csharp 代码 ----------------")
 	# generate_target('configcs')
