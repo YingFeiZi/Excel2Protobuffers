@@ -136,7 +136,13 @@ def generate_target_file(protoDir,proto_file, target_path, language_sign):
 	languageOut = getProtocLanguage(language_sign)
 	command = f"{config.GetProtoc()} --proto_path {protoDir}  {languageOut}{target_path} {filename}{ext}" 
 	# print(command)
-	subprocess.call(command, shell=True)
+	# subprocess.call(command, shell=True)
+	try:
+		output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT, universal_newlines=True)
+		print(output)
+	except subprocess.CalledProcessError as e:
+		print(f"Command failed : {e.returncode}:")
+		print(e.output)
 
 def generate_config(mod_name, config_file_root_path):
 	configcs_file_path = config.GetFullPathExtension(config_file_root_path, f"{mod_name}Config",config.scriptExtDict['configcs'])
