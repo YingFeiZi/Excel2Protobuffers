@@ -1,5 +1,6 @@
 import re
 import subprocess
+from numpy import array_split
 import openpyxl
 from datetime import date, datetime
 from pathlib import Path
@@ -64,73 +65,6 @@ def excel_to_protonew(excel_path):
 	if excelparse.isParseSuccess:
 		writeProto(excelparse)
 
-"""
-def excel_to_proto(excel_path):
-	wb = openpyxl.load_workbook(excel_path,True, False,True)
-	sheet = wb.active
-	readsheet(sheet)
-
-def readsheet(sheet):
-	variable_dict = {}
-	variable_defaultValue_dict = {}
-	# sheet_name = sheet.name
-	sheet_name = sheet.title
-	row_table_name = sheet_name
-	group_table_name = f"{sheet_name}"
-	data_col_count = sheet.max_column#列数
-	for col_num in range(0, data_col_count):
-		col_num += 1
-		name_datacell = sheet.cell(config.NAMEROW, col_num)
-		if not name_datacell.value:
-			continue
-		name_data = name_datacell.value
-		if name_data == None or name_data.strip() == "": continue
-		typecell = sheet.cell(config.TYPEROW, col_num)
-		if not typecell.value:
-			continue
-		type_data = typecell.value.split(':')[0]
-
-		# print('表', sheet_name, '字段', name_data, '的数据类型', type_data)
-		if type_data == None or type_data.strip() == "": continue
-		variable_name = name_data[0].upper() + name_data[1:]
-		row_type_data = config.GetCustomTypeValue(type_data)
-		if variable_name in variable_dict:
-			print('异常退出: ','表', sheet_name, '存在相同的字段名: ', variable_name)
-			# sys.exit()
-			return
-
-		if not config.CheckSupportType(row_type_data):
-			print('表', sheet_name, '字段', variable_name, '的数据类型', row_type_data,'不在支持的列表中')
-			# continue
-			return
-
-		if col_num == 1:
-			data_dict = {
-				'field_name': variable_name,
-				'field_type': row_type_data,
-			}
-			config.excelKeyDict[sheet_name]=data_dict
-		variable_dict[variable_name] = row_type_data
-
-		variable_defaultValue_dict[variable_name] = "NULL"
-
-	# 组合变量定义代码字符串
-	variables_str = ''
-	index=1
-	for variable in variable_dict:
-		data_type = variable_dict[variable]
-		isArry, subType = config.GetEnableArrylistValue(data_type)
-		subType = isArry and  subType or data_type
-		variables_str += protoTpl.getRowLineCore(subType, variable, index, isArry)
-		index += 1
-	variables_str = variables_str.strip(' \t\n\t')
-	row_data_table_code_str = protoTpl.getRowCode(row_table_name.upper(), variables_str)
-	# 组合列表代码字符串
-	group_data_table_code_str = protoTpl.getGroupcode(row_data_table_code_str, group_table_name.upper(), row_table_name.upper())
-	proto_path = Path(config.GetRootProto()).joinpath(f"{group_table_name}.{config.scriptExtDict['proto']}")
-	write_str = group_data_table_code_str #protoTpl.getProtoCode(group_data_table_code_str, row_data_table_code_str)
-	config.writeFile(proto_path, write_str)
-"""
 def generate_target_file(protoDir,proto_file, target_path, language_sign):
 	filename,ext = config.GetFileNameExt(proto_file)
 	languageOut = getProtocLanguage(language_sign)
@@ -184,6 +118,45 @@ def genearte_excel_to_proto():
 		print(f"[{index}/{count}]  {config.GetRootBytes()}\\{name}.{ext}")
 		excel_to_protonew(str(excel))
 		index += 1
+def genearte_common_to_proto():
+	messages =[]
+	for v in config.CUSTOM_TYPES:
+		customvalue = config.GetCustomTypeValue(v)
+		if not config.CheckDefaultType(customvalue):
+			arrys = config.GetCustomTypeList(customvalue)
+			if not arrys == None:
+				variables_str=''
+				for arr in arrys:
+					index = arr[0]
+					substr = f"{arr[1]} {arr[2]}"
+					variables_str += protoTpl.getRowLineCore(substr, arr[3], index)
+				messagestr = protoTpl.getRowCode(customvalue, variables_str)
+				messages.append(messagestr)
+
+			# section = config.customini.get_section_options(customvalue)
+			# if len(section) > 0:
+			# 	index=1
+			# 	variables_str=''
+			# 	for v2 in section:
+			# 		op = config.customini.get_option(v2)
+			# 		# repeated#uint64#list
+			# 		arr = str(op).split('#')
+			# 		print(op)
+			# 		if len(arr) < 3 :
+			# 			continue
+			# 		substr = f"{arr[0]} {arr[1]}"
+			# 		variables_str += protoTpl.getRowLineCore(substr, arr[2], index)
+			# 		index += 1
+			# 	messagestr = protoTpl.getRowCode(customvalue, variables_str)
+			# 	messages.append(messagestr)
+	if len(messages)>0:
+		messagestrs =''
+		for msg in messages:
+			messagestrs += msg
+		comproto = protoTpl.getGroupcode2(messagestr, False)
+		common = Path(config.GetRootProto()).joinpath(f"table_common.{config.scriptExtDict['proto']}")
+		config.writeFile(common, comproto)
+
 
 def clean():
 	config.clean_directory(config.GetRootProto())
@@ -194,6 +167,7 @@ def run():
 	clean()
 
 	print("---------------- 生成Proto文件, 生成不同语言代码 ----------------")
+	genearte_common_to_proto()
 	genearte_excel_to_proto()
 	print("---------------- 开始生成 python代码 ----------------")
 	generate_target('python')	# 生成Python代码是必须的，因为要用来打包数据

@@ -1,8 +1,9 @@
+from logging import config
 from pathlib import Path
 import re
 from shutil import copyfile
-import configparser as iniParse
 import sys
+from IniParse import IniParse
 
 PROTOTYPE = 1
 PROTOSHOW = 3
@@ -139,6 +140,22 @@ CUSTOM_TYPES = {
 def GetCustomTypeValue(value):
     return CUSTOM_TYPES.get(value, value)
 
+def GetCustomTypeList(type):
+    section = customini.get_section_options(type)
+    customlist = []
+    if len(section) > 0:
+        index=1
+        for v2 in section:
+            op = customini.get_option(v2)
+            # repeated#uint64#list
+            arr = str(op).split('#')
+            print(op)
+            if len(arr) < 3 :
+                continue
+            customlist.append((index, arr[0], arr[1], arr[2]))
+            index += 1
+    return customlist
+
 SUPPORT_DATATYPES = [
 	'double',	# double
 	'float',	# float
@@ -156,8 +173,11 @@ SUPPORT_DATATYPES = [
 	'string',	# string
 ]
 
-def CheckSupportType(type):
-    return type in SUPPORT_DATATYPES or type in ENABLEARRYLIST
+def CheckSupportType(tp):
+    return CheckDefaultType(tp) or len(customini.get_section_options(tp))>0
+
+def CheckDefaultType(tp):
+     return tp in SUPPORT_DATATYPES or tp in ENABLEARRYLIST
 
 ENABLEARRYLIST = [
     '[double]',
@@ -176,9 +196,9 @@ ENABLEARRYLIST = [
  	'[string]',
  ]
 
-def GetEnableArrylistValue(type):
-	if type in ENABLEARRYLIST:
-		subType = re.sub(r"\[|\]","", type)
+def GetEnableArrylistValue(tp):
+	if tp in ENABLEARRYLIST:
+		subType = re.sub(r"\[|\]","", tp)
 		return True, subType
 	return False, None
 
@@ -231,18 +251,22 @@ def writeFile(path, context):
         f.write(context)
 
 def initIni():
-    confini = iniParse.ConfigParser()
-    confini.read('config.ini')
-    # if confini.has_section('Path'):
-    #     exceldir = confini.get('Path', 'exceldir')
-    #     outputBytesDir = confini.get('Path', 'outputBytesDir')
-    #     outputCSDir = confini.get('Path', 'outputCSDir')
-    #     outputConfigCSDir = confini.get('Path', 'outputConfigCSDir')
-	# # 遍历所有section和选项
-    for section in confini.sections():
-        for option, value in confini.items(section):
-            # print(f"Section: {section}, Option: {option}, Value: {value}")
-            ini[option] = value
+
+    # confini = iniParse.ConfigParser()
+    # confini.read('config.ini')
+    # # if confini.has_section('Path'):
+    # #     exceldir = confini.get('Path', 'exceldir')
+    # #     outputBytesDir = confini.get('Path', 'outputBytesDir')
+    # #     outputCSDir = confini.get('Path', 'outputCSDir')
+    # #     outputConfigCSDir = confini.get('Path', 'outputConfigCSDir')
+	# # # 遍历所有section和选项
+    # for section in confini.sections():
+    #     for option, value in confini.items(section):
+    #         # print(f"Section: {section}, Option: {option}, Value: {value}")
+    #         ini[option] = value
+    confini = IniParse('config.ini')
+    global ini
+    ini = confini.Allini
     global TYPEROW
     TYPEROW = int(ini['typerow'])
     global NAMEROW
@@ -253,12 +277,13 @@ def initIni():
     PROTOTYPE = int(ini['prototype'])
     global PROTOSHOW
     PROTOSHOW = int(ini['protoshow'])
-    
-    customini = iniParse.ConfigParser()
-    customini.read('customType.ini')
-    for section in customini.sections():
-        for option, value in customini.items(section):
-            CUSTOM_TYPES[option] = value
+    global customini
+    customini = IniParse('customType.ini')
+    global CUSTOM_TYPES
+    CUSTOM_TYPES = customini.get_section_options('customType')
+    # for section in customini.sections():
+    #     for option, value in customini.items(section):
+    #         CUSTOM_TYPES[option] = value
     cleanExcel()
     # sys.path.append(f"{Path.cwd()}")
     

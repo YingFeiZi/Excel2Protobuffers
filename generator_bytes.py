@@ -1,4 +1,6 @@
+import imp
 import sys
+import google.protobuf.descriptor
 import openpyxl
 import google.protobuf
 from datetime import date, datetime
@@ -9,88 +11,63 @@ from ExcelParse import ExcelParse
 import config
 import bytesTpl
 import importlib
-sys.path.append(f"{Path.cwd()}")
+import os
+sys.path.append(f"{config.work_root}\\{config.GEN_DIR_DICT['python']}")
 # sys.path.append(f"{Path.cwd().joinpath('../Python3.11.7/Lib/site-packages')}")
 
-ARRAY_SPLITTER = '#'
-arry32 = ['int', 'int32', 'sint32', 'sfixed32']
-arryu32 = ['uint','uint32', 'fixed32']
-arry64 =  ['int64', 'double','sint64', 'sfixed64']
-arryu64 = ['uint64', 'fixed64']
-
-def get_real_value(data_type, raw_value):
-	if not raw_value :
-		return None
-	# print('data_type: ', data_type, 'raw_value:', raw_value)
-	if data_type == 'string':
-		value = str(raw_value)
-		value = value.replace('\\', '\\\\')
-		return '''{}'''.format(value)
-	elif data_type in arry32:
-		return np.int32(trimDotZeroes(raw_value)) # type: ignore
-	elif data_type in arryu32:
-		return np.uint32(trimDotZeroes(raw_value)) # type: ignore
-	elif data_type in arry64:
-		return np.int64(trimDotZeroes(raw_value)) # type: ignore
-	elif data_type in arryu64:
-		return np.uint64(trimDotZeroes(raw_value)) # type: ignore
-	elif data_type == 'float':
-		return float(raw_value)
-	elif data_type == 'bool':
-		return bool(raw_value)
-	elif data_type in config.ENABLEARRYLIST:
-		return str(raw_value)
-	else:
-		return None
-
-def trimDotZeroes(text):
-	if isinstance(text, str):
-		text = text.strip()
-		if text == "": return 0
-		return re.sub("\.0+$", "", text)
-	return text
-
-def get_single_data_code(index, row_data):
-	variable_create_code = ''
-	for field in row_data:
-		fvalue = field['field_value']
-		if fvalue == None:
-			continue
-		ftype = field['field_type']
-		fname = field['field_name']
-
-		
-  
-		if ftype == 'string':
-			variable_create_code += bytesTpl.getRowCode(index, fname, fvalue, True)
-		elif ftype in config.ENABLEARRYLIST:
-			valueArrs = fvalue.split(ARRAY_SPLITTER)
-			valueArrsLen = len(valueArrs)
-			subType = re.sub(r"\[|\]","", ftype)
-			for curIndex in range(valueArrsLen):
-				isstring =  subType == 'string'
-				variable_create_code += bytesTpl.getRowCode(index, fname, valueArrs[curIndex], isstring, True)
-		else:
-			variable_create_code += bytesTpl.getRowCode(index, fname, fvalue)
-
-	return variable_create_code
-
-def get_list_data_code(excel_row_list):
-	allRowCodes=''
-	index=0
-	for RowData in excel_row_list:
-		rowcodes = get_single_data_code(index,RowData)
-		allRowCodes += bytesTpl.getAddRowCode(index, rowcodes)
-		index += 1
-	return allRowCodes
-
 ##############################################################################################################################
-def get_list_data_code_new(excel_row_list):
+def PareProtoDesc(pb2, entry_name):
+	module = __import__(pb2)
+	proto_desc = []
+	# alias FieldDescriptor
+	FieldDescriptor = google.protobuf.descriptor.FieldDescriptor
+	cls = getattr(module, entry_name)
+	DESCRIPTOR = cls.DESCRIPTOR
+	for desc in DESCRIPTOR.fields:
+		if desc.number > 99:
+			continue
+		field_name = desc.name
+		if field_name[0] == '_':
+			continue
+
+		field_number = desc.number
+		field_label = desc.label
+		field_type = None
+		if desc.type == desc.TYPE_INT32 or \
+				desc.type == desc.TYPE_INT64 or \
+				desc.type == desc.TYPE_SINT32 or \
+				desc.type == desc.TYPE_SINT64 or \
+				desc.type == desc.TYPE_FIXED32 or \
+				desc.type == desc.TYPE_FIXED64 or \
+				desc.type == desc.TYPE_UINT32 or \
+				desc.type == desc.TYPE_UINT64 or \
+				desc.type == desc.TYPE_ENUM :
+			field_type = int
+		elif desc.type == desc.TYPE_BOOL:
+			field_type = bool
+		elif desc.type == desc.TYPE_FLOAT:
+			field_type = float
+		elif desc.type == desc.TYPE_BYTES or \
+				desc.type == desc.TYPE_STRING:
+			field_type = str
+		elif desc.type == desc.TYPE_MESSAGE:
+			msg_desc = desc.message_type
+			field_type = msg_desc.name
+			# if msg_desc.name == "ItemDrop":
+				# field_type = table_common_pb2.ItemDrop
+			# else:
+				# print("bad field type: " + msg_desc.name)
+
+		proto_desc += [(field_name, field_number, field_type, field_label)]
+	print("proto_desc = " ,str(proto_desc))
+
+
+def get_list_data_code_new(excel_row_list, tableName):
 	allRowCodes=''
 	index=0
 	for RowData in excel_row_list:
 		rowcodes = get_single_data_code_new(index,RowData)
-		allRowCodes += bytesTpl.getAddRowCode(index, rowcodes)
+		allRowCodes += bytesTpl.getAddRowCode(index, tableName.upper(), rowcodes)
 		index += 1
 	return allRowCodes
 
@@ -105,16 +82,22 @@ def get_single_data_code_new(index, row_data):
 			continue
 		ftype = data.type
 		fname = data.name
-		
 		isRepeated = data.isRepeated()
-		if isRepeated:
-			valueArrsLen = len(data.arrayvalue)
-			for curIndex in range(valueArrsLen):
+		if config.CheckDefaultType(ftype):
+			if isRepeated:
+				valueArrsLen = len(data.arrayvalue)
+				for curIndex in range(valueArrsLen):
+					isstring =  ftype == 'string'
+					variable_create_code += bytesTpl.getRowCode(index, fname, data.arrayvalue[curIndex], isstring, True)
+			else:
 				isstring =  ftype == 'string'
-				variable_create_code += bytesTpl.getRowCode(index, fname, data.arrayvalue[curIndex], isstring, True)
+				variable_create_code += bytesTpl.getRowCode(index, fname, fvalue, isstring, False)
 		else:
-			isstring =  ftype == 'string'
-			variable_create_code += bytesTpl.getRowCode(index, fname, fvalue, isstring, False)
+			print(ftype)
+			datas = config.GetCustomTypeList(ftype)
+			
+
+
 	return variable_create_code
 
 def byteFormat(parse):
@@ -122,10 +105,11 @@ def byteFormat(parse):
 	mod_name = parse.sheetName
 	excel_row_list  = parse.sheet_row_data_list
 	bytes_file_root_path = config.GetRootBytes()
-	allRowCodes = get_list_data_code_new(excel_row_list)
+	allRowCodes = get_list_data_code_new(excel_row_list , mod_name)
 	byte_file_path = config.GetFullPathExtension(bytes_file_root_path, mod_name,config.scriptExtDict['bytes'])
 	byte_file_path = str(byte_file_path).replace('\\', '/')
-	code = bytesTpl.getPythonCode(config.GEN_DIR_DICT['python'], f"{mod_name}_pb2",mod_name.upper(), allRowCodes,byte_file_path)
+	pb = config.GEN_DIR_DICT['python']
+	code = bytesTpl.getPythonCode(pb, f"{mod_name}_pb2",mod_name.upper(), allRowCodes,byte_file_path, parse.hasCommon)
 
 	# config.writeFile(f"{mod_name}_pb2.py", code)
 	# try:
@@ -139,16 +123,22 @@ def byteFormat(parse):
 	try:
 		# print(f"{str(Path.cwd())}\\{mod_name}.py")
 		# config.writeFile(f"{mod_name}.py", code)
+		# pbroot = Path.joinpath(config.work_root, pb)
+		# os.chdir(pbroot)
 		exec(code)
+		# PareProtoDesc(f"{config.GEN_DIR_DICT['python']}.{mod_name}_pb2", mod_name.upper())
+		# PareProtoDesc(f"{mod_name}_pb2", mod_name.upper())
 	except Exception as e:
 		print(e)
 		print('生成失败: ', byte_file_path)
-		config.writeFile(f"{mod_name}_pb2.py", code)
+		config.writeFile(f"{mod_name}_gen.py", code)
 		# if os.path.exists(f"{mod_name}_pb2.py"):
 		# 	os.remove(f"{mod_name}_pb2.py")
 		# 	file = open(f"{mod_name}_pb2.py", 'a', encoding='utf-8')
 		# 	file.write(code)
 		# 	file.close()
+	os.chdir(config.work_root)
+	
 def generate_excel_data_new(path):
 	parse = ExcelParse(path, config.TYPEROW, config.NAMEROW, config.DATAROW, config.PROTOTYPE, config.PROTOSHOW)
 	parse.readExcel()
@@ -161,6 +151,7 @@ def generate_all_excel_byte_data():
 	excels = config.GetFilesByExtension(config.GetRootExcel(), config.scriptExtDict['xlsx'])
 	index =  1
 	count = len(excels)
+	os.chdir(config.work_root)
 	for excel in excels:
 		name, ext = excel.stem, excel.suffix
 		ext = config.scriptExtDict['bytes']

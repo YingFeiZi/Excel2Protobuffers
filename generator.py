@@ -18,8 +18,8 @@ def CopyToFolder(name, outDir,language_sign):
 			except IOError as e:
 				print(f"--->ERROR: An error occurred while copying {name}.bytes or {name}.cs: {e}")
 
-# names =['cfg_aids_advance']
-names =[]
+names =['cfg_equip_jinjie']
+# names =[]
 
 def DoAllOpreater():
 	excels = config.GetFilesByExtension(config.GEN_DIR_DICT['xlsx'],config.scriptExtDict['xlsx'])
@@ -34,7 +34,7 @@ def DoAllOpreater():
 	for name in excelnames:
 		CopyToFolder(name, config.getOutBytesDir(), 'bytes')
 		CopyToFolder(name, config.getOutputCSDir(), 'csharp')
-		CopyToFolder(f"{name}Config", config.getOutputConfigCSDir(), 'configcs')
+		# CopyToFolder(f"{name}Config", config.getOutputConfigCSDir(), 'configcs')
 	gcs = genCSV.excel2csv()
 	gcs.run()
 	print("Done")

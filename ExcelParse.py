@@ -1,5 +1,7 @@
 import copy
+# from curses import raw
 import re
+from cv2 import DRAW_MATCHES_FLAGS_DRAW_OVER_OUTIMG
 import openpyxl
 import sys
 import numpy as np
@@ -9,6 +11,7 @@ class CellInfo:
     def __init__(self, type, name, value = None):
         self.type = type
         self.name = name
+        self.originaldata = ''
         self.value = value
         self.row = 0
         self.col = 0
@@ -22,6 +25,7 @@ class CellInfo:
 
 class ExcelParse:
     ARRAY_SPLITTER = '#'
+    LIST_SPLITCHAR = '\||&'
     arry32 = ['int', 'int32', 'sint32', 'sfixed32']
     arryu32 = ['uint','uint32', 'fixed32']
     arry64 =  ['int64', 'double','sint64', 'sfixed64']
@@ -34,21 +38,34 @@ class ExcelParse:
         self.keynamerow = namerow
         self.datarow = datarow
         self.isParseSuccess = False
+        self.hasCommon = False
     def trimDotZeroes(self,text):
         if isinstance(text, str):
             text = text.strip()
             if text == "": return 0
             return re.sub("\.0+$", "", text)
         return text
-    def get_real_value(self,data_type, raw_value):
-        if not raw_value :
+    def get_repeate_value(self,data_type, row_value):
+        arr = re.split(ExcelParse.ARRAY_SPLITTER, row_value)
+        if len(arr) > 1:
+            if data_type in ExcelParse.arryu64:
+                v1 = int(np.int32(self.trimDotZeroes(arr[0])))
+                v2 = int(np.int32(self.trimDotZeroes(arr[1])))
+                return (v1<<32) | v2
+
+        else:
+            return self.get_real_value(data_type, row_value)
+
+
+    def get_real_value(self,data_type, row_value):
+        if not row_value :
             return None
-            # print('data_type: ', data_type, 'raw_value:', raw_value)
-        trizv = self.trimDotZeroes(raw_value)
+            # print('data_type: ', data_type, 'row_value:', row_value)
+        trizv = self.trimDotZeroes(row_value)
         try:
             npv = None
             if data_type == 'string':
-                value = str(raw_value)
+                value = str(row_value)
                 value = value.replace('\\', '\\\\')
                 npv = '''{}'''.format(value)
             elif data_type in ExcelParse.arry32:
@@ -60,9 +77,9 @@ class ExcelParse:
             elif data_type in ExcelParse.arryu64:
                 npv = np.uint64(trizv)
             elif data_type == 'float':
-                npv = float(raw_value)
+                npv = float(row_value)
             elif data_type == 'bool':
-                npv = bool(raw_value)
+                npv = bool(row_value)
             else:
                 return None
             return npv
@@ -106,6 +123,8 @@ class ExcelParse:
                 self.isParseSuccess = False
                 # continue
                 return
+            if not config.CheckDefaultType(row_type_data):
+                self.hasCommon = True
 
             prototypecell = sheet.cell(self.prototype, col_num)
             prototype = prototypecell.value
@@ -128,15 +147,35 @@ class ExcelParse:
             for variable in self.variableDict:
                 rowcell = row_data[variable.col -1]
                 cell = copy.deepcopy(variable)
-                if cell.isRepeated():
-                    if not rowcell.value == None:
-                        arrayv = rowcell.value.split(ExcelParse.ARRAY_SPLITTER)
-                        for v in arrayv:
-                            cell.arrayvalue.append(self.get_real_value(cell.type, v))
+                cell.originaldata = rowcell.value
+                if  config.CheckDefaultType(cell.type):
+                    if cell.isRepeated():
+                        if not rowcell.value == None:
+                            if '|' in rowcell.value or '&' in rowcell.value:
+                                arrayv = re.split(ExcelParse.LIST_SPLITCHAR, rowcell.value) #rowcell.value.split(ExcelParse.ARRAY_SPLITTER)
+                                for v in arrayv:
+                                    cell.arrayvalue.append(self.get_repeate_value(cell.type, v))
+                            else:
+                                arrayv = re.split(ExcelParse.ARRAY_SPLITTER, rowcell.value) #rowcell.value.split(ExcelParse.ARRAY_SPLITTER)
+                                for v in arrayv:
+                                    cell.arrayvalue.append(self.get_repeate_value(cell.type, v))
+                    else:
+                        cellvalue = self.get_real_value(cell.type, rowcell.value)
+                        cell.value = cellvalue
                 else:
-                    cellvalue = self.get_real_value(cell.type, rowcell.value)
-                    cell.value = cellvalue
+                    cell.arrayvalue = self.PareCustomType(cell.type)
+
                 cell.row = rowcell.row
                 single_row_data.append(cell)
             self.sheet_row_data_list.append(single_row_data)
         self.isParseSuccess = True
+
+    def PareCustomType(self,type):
+        attrs = []
+        custs = config.GetCustomTypeList(type)
+        if len(custs) ==1:
+            crepeate = custs[0][1]
+            ctype = custs[0][2]
+            cname = custs[0][3]
+            
+        return attrs
