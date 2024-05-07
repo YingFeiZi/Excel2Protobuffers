@@ -259,11 +259,17 @@ ARRAY_SPLITTER = '#'
 LIST_SPLITCHAR1 = '&'
 LIST_SPLITCHAR2 = '\|'
 LIST_SPLITCHAR3 = '\|&'
+SPLITLIST = ['#', '-', '|', '&']
 arry32 = ['int', 'int32', 'sint32', 'sfixed32']
 arryu32 = ['uint','uint32', 'fixed32']
 arry64 =  ['int64', 'double','sint64', 'sfixed64']
 arryu64 = ['uint64', 'fixed64']
 
+def get_split_char(value):
+    for c in SPLITLIST:
+        if c in value:
+            return c
+    return None
 ####################################################################################################################
 
 def writeFile(path, context):

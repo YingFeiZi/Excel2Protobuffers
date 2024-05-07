@@ -158,13 +158,3 @@ class ExcelParse:
                 single_row_data.append(cell)
             self.sheet_row_data_list.append(single_row_data)
         self.isParseSuccess = True
-
-    def PareCustomType(self,type):
-        attrs = []
-        custs = config.GetCustomTypeList(type)
-        if len(custs) ==1:
-            crepeate = custs[0][1]
-            ctype = custs[0][2]
-            cname = custs[0][3]
-            
-        return attrs

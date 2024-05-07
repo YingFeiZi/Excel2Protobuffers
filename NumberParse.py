@@ -52,7 +52,26 @@ def ParsePart(value, split):
         v1 = int(np.int64(trimDotZeroes(arr[0])))
         v2 = int(np.int32(trimDotZeroes(arr[1])))
         return (v1<<32) | v2
-    
+
+def ParseStringToIntList(value):
+    vs = []
+    c = config.get_split_char(value)
+    if c == '' or c == None:
+        return vs
+    arrayv = re.split(c, str(value))
+    for v in arrayv:
+        vv = get_real_value('int', v)
+        vs.append(vv)
+    return vs
+
+def ParseUint64List(value):
+    vs = []
+    arrayv = re.split(config.LIST_SPLITCHAR1, value)
+    for v in arrayv:
+        arrayvalue = ParseStringToComboList(v, config.LIST_SPLITCHAR2, config.ARRAY_SPLITTER)
+        vs.append(arrayvalue)
+    return vs
+
 def Parse(type, cvalue):
     vs = []
     if cvalue == None or cvalue == '':
@@ -64,7 +83,7 @@ def Parse(type, cvalue):
     elif type=="uint32list":
         arrayv = re.split(config.ARRAY_SPLITTER, str(value))
         for v in arrayv:
-            vv = get_real_value(type, value)
+            vv = get_real_value(type, v)
             vs.append(vv)
     elif type=="uint32#&list":
         vs = ParseStringToComboList(value, config.LIST_SPLITCHAR1, config.ARRAY_SPLITTER)

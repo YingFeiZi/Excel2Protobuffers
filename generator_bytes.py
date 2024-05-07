@@ -13,6 +13,8 @@ import bytesTpl
 import importlib
 import os
 import Encrypted
+from ExcelDescriptor import ExcelDescriptor
+
 sys.path.append(f".\\{config.GEN_DIR_DICT['python']}")
 # sys.path.append(f"{config.work_root}\\{config.GEN_DIR_DICT['python']}")
 # sys.path.append(f"{Path.cwd().joinpath('../Python3.11.7/Lib/site-packages')}")
@@ -121,7 +123,7 @@ def byteFormat(parse):
 
 	try:
 		# print(f"{str(Path.cwd())}\\{mod_name}.py")
-		# config.writeFile(f"{mod_name}_gen.py", code)
+		config.writeFile(f"{mod_name}_gen.py", code)
 		# pbroot = Path.joinpath(config.work_root, pb)
 		# os.chdir(pbroot)
 		exec(code)
@@ -144,6 +146,14 @@ def generate_excel_data_new(path):
 	if parse.isParseSuccess:
 		byteFormat(parse)
 
+def generate_excel_data_desc(path):
+	parse = ExcelDescriptor(path, config.TYPEROW, config.NAMEROW, config.DATAROW, config.PROTOTYPE, config.PROTOSHOW)
+	parse.readExcel()
+	if parse.isParseSuccess:
+		byte_file_path = config.GetFullPathExtension(config.GetRootBytes(), parse.sheetName,config.scriptExtDict['bytes'])
+		byte_file_path = str(byte_file_path).replace('\\', '/')
+		parse.Write(byte_file_path)
+
 ##############################################################################################################################
 
 def generate_all_excel_byte_data():
@@ -156,6 +166,7 @@ def generate_all_excel_byte_data():
 		ext = config.scriptExtDict['bytes']
 		print(f"[{index}/{count}]  {config.GetRootBytes()}\\{name}.{ext}")
 		generate_excel_data_new(str(excel))
+		# generate_excel_data_desc(str(excel))
 		index += 1
 
 def run():
