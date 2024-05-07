@@ -133,6 +133,7 @@ class FileConverterApp(QWidget):
         self.clear_log()
         
     def buttonrefresh(self):
+        self.SvnUpdate(self.selectdir)
         self.refresh_files(self.search_text.text())
         self.clear_log()
 
@@ -237,7 +238,7 @@ class FileConverterApp(QWidget):
     def convert_file(self, file_name):
         # 文件转换操作
 
-        self.log_area.append(f"Converting selected file: {file_name}")
+        self.log_area.append(f"Converting selected file: {file_name}\n")
         config.cleanExcel()
         config.CopyToFolder(self.selectdir + "/" +  file_name)
         generator.DoAllOpreater()
@@ -274,6 +275,11 @@ class FileConverterApp(QWidget):
         cursor.insertText(text)
         self.log_area.setTextCursor(cursor)
         self.log_area.ensureCursorVisible()
+
+    def SvnUpdate(self, path):
+        command = f"TortoiseProc.exe /command:update /path:{path}  /closeonend:1"
+        output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT, universal_newlines=True)
+        print('Update over',output)
 
 class EmittingWarring(QObject):
     textWriten = pyqtSignal(str)

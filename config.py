@@ -3,6 +3,7 @@ from pathlib import Path
 import re
 from shutil import copyfile
 import sys
+import subprocess
 from IniParse import IniParse
 
 PROTOTYPE = 1
@@ -90,14 +91,25 @@ GEN_DIR_DICT ={
     'objc': 'gen_objc',
     'php': 'gen_php',
     'pyi': 'gen_pyi',
-    'python': 'gen_python',
+    # 'python': 'gen_python',
+    'python': '',
     'ruby': 'gen_ruby',
     'rust': 'gen_rust'
 }
 def getGenDirByLanguage(language):
-    return getRootPath(GEN_DIR_DICT[language])
+    lp = GEN_DIR_DICT[language]
+    isnull = lp == None or lp == ''
+    p=''
+    if not isnull:
+        p = getRootPath(lp)
+    return getRootPath(lp)
 # 本工具的根目录
 work_root = Path.cwd()
+
+def SvnUpdate(path):
+    command = f"TortoiseProc.exe /command:update /path:{path}  /closeonend:0"
+    output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT, universal_newlines=True)
+    print('Update over',output)
 
 # protoc.exe所在目录
 # protoc = os.path.join(work_root, 'protoc-25.2/bin/protoc.exe')
@@ -149,7 +161,7 @@ def GetCustomTypeList(type):
             op = customini.get_option(v2)
             # repeated#uint64#list
             arr = str(op).split('#')
-            print(op)
+            # print(op)
             if len(arr) < 3 :
                 continue
             customlist.append((index, arr[0], arr[1], arr[2]))
@@ -177,7 +189,7 @@ def CheckSupportType(tp):
     return CheckDefaultType(tp) or len(customini.get_section_options(tp))>0
 
 def CheckDefaultType(tp):
-     return tp in SUPPORT_DATATYPES or tp in ENABLEARRYLIST
+     return tp in SUPPORT_DATATYPES #or tp in ENABLEARRYLIST
 
 ENABLEARRYLIST = [
     '[double]',
@@ -220,12 +232,13 @@ def GetFileNameExt(file):
 	name, ext = p.name, p.suffix
 	return re.split(r"\.|-", name)[0], ext
 
-def clean_directory(target_path):
+def clean_directory(target_path, isClear = False):
     # 确保目标路径是一个目录
     p = Path(target_path)
     p.mkdir(parents=True, exist_ok=True)
     # 检查路径是否存在并且是个目录
-
+    if not isClear:
+         return
     if p.exists() and p.is_dir():
         # 遍历目录下的所有子文件和子目录
         for child in p.glob('*'):
@@ -241,6 +254,17 @@ def clean_directory(target_path):
         
         # # 清空目录后删除该目录
         # p.rmdir()
+####################################################################################################################
+ARRAY_SPLITTER = '#'
+LIST_SPLITCHAR1 = '&'
+LIST_SPLITCHAR2 = '\|'
+LIST_SPLITCHAR3 = '\|&'
+arry32 = ['int', 'int32', 'sint32', 'sfixed32']
+arryu32 = ['uint','uint32', 'fixed32']
+arry64 =  ['int64', 'double','sint64', 'sfixed64']
+arryu64 = ['uint64', 'fixed64']
+
+####################################################################################################################
 
 def writeFile(path, context):
 	# 写入文件
@@ -288,7 +312,7 @@ def initIni():
     # sys.path.append(f"{Path.cwd()}")
     
 def cleanExcel():
-    clean_directory(getRootPath(GEN_DIR_DICT['xlsx']))
+    clean_directory(getRootPath(GEN_DIR_DICT['xlsx']), True)
 
 def mkdir(path):
     p = Path(path)

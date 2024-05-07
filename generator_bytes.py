@@ -12,7 +12,9 @@ import config
 import bytesTpl
 import importlib
 import os
-sys.path.append(f"{config.work_root}\\{config.GEN_DIR_DICT['python']}")
+import Encrypted
+sys.path.append(f".\\{config.GEN_DIR_DICT['python']}")
+# sys.path.append(f"{config.work_root}\\{config.GEN_DIR_DICT['python']}")
 # sys.path.append(f"{Path.cwd().joinpath('../Python3.11.7/Lib/site-packages')}")
 
 ##############################################################################################################################
@@ -76,27 +78,24 @@ def get_single_data_code_new(index, row_data):
 	for data in row_data:
 		if not data.isShow():
 			continue
-
 		fvalue = data.value
 		if fvalue == None and len(data.arrayvalue) < 1:
 			continue
-		ftype = data.type
-		fname = data.name
-		isRepeated = data.isRepeated()
-		if config.CheckDefaultType(ftype):
-			if isRepeated:
-				valueArrsLen = len(data.arrayvalue)
-				for curIndex in range(valueArrsLen):
-					isstring =  ftype == 'string'
-					variable_create_code += bytesTpl.getRowCode(index, fname, data.arrayvalue[curIndex], isstring, True)
-			else:
-				isstring =  ftype == 'string'
-				variable_create_code += bytesTpl.getRowCode(index, fname, fvalue, isstring, False)
-		else:
-			print(ftype)
-			datas = config.GetCustomTypeList(ftype)
-			
-
+		variable_create_code += data.toByte(index)
+		
+		# ftype = data.type
+		# fname = data.name
+		# isRepeated = data.isRepeated()
+		# if config.CheckDefaultType(ftype):
+		# 	if isRepeated:
+		# 		valueArrsLen = len(data.arrayvalue)
+		# 		for curIndex in range(valueArrsLen):
+		# 			variable_create_code += bytesTpl.getRowCode(index, fname, data.arrayvalue[curIndex], True)
+		# 	else:
+		# 		variable_create_code += bytesTpl.getRowCode(index, fname, fvalue, False)
+		# else:
+		# 	# print(ftype)
+		# 	datas = config.GetCustomTypeList(ftype)
 
 	return variable_create_code
 
@@ -122,7 +121,7 @@ def byteFormat(parse):
 
 	try:
 		# print(f"{str(Path.cwd())}\\{mod_name}.py")
-		# config.writeFile(f"{mod_name}.py", code)
+		# config.writeFile(f"{mod_name}_gen.py", code)
 		# pbroot = Path.joinpath(config.work_root, pb)
 		# os.chdir(pbroot)
 		exec(code)
@@ -137,7 +136,7 @@ def byteFormat(parse):
 		# 	file = open(f"{mod_name}_pb2.py", 'a', encoding='utf-8')
 		# 	file.write(code)
 		# 	file.close()
-	os.chdir(config.work_root)
+	# os.chdir(config.work_root)
 	
 def generate_excel_data_new(path):
 	parse = ExcelParse(path, config.TYPEROW, config.NAMEROW, config.DATAROW, config.PROTOTYPE, config.PROTOSHOW)
@@ -151,7 +150,7 @@ def generate_all_excel_byte_data():
 	excels = config.GetFilesByExtension(config.GetRootExcel(), config.scriptExtDict['xlsx'])
 	index =  1
 	count = len(excels)
-	os.chdir(config.work_root)
+	# os.chdir(config.work_root)
 	for excel in excels:
 		name, ext = excel.stem, excel.suffix
 		ext = config.scriptExtDict['bytes']

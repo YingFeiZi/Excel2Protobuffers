@@ -1,6 +1,5 @@
 import re
 import subprocess
-from numpy import array_split
 import openpyxl
 from datetime import date, datetime
 from pathlib import Path
@@ -40,23 +39,24 @@ def writeProto(excelparse):
 def protoFormat(excelparse):
 	# 组合变量定义代码字符串
 	variables_str = ''
-	index=1
+	# index=1
 	for variable in excelparse.variableDict:
-		data_type = variable.type
-		substr = f"{data_type}"
-		if variable.isRepeated():
-			substr = f"repeated {data_type}"
-		if not variable.isShow():
-			substr ="//"+substr
-		variables_str += protoTpl.getRowLineCore(substr, variable.name, index)
-		index += 1
+		# data_type = variable.type
+		# substr = f"{data_type}"
+		# if variable.isRepeated():
+		# 	substr = f"repeated {data_type}"
+		# if not variable.isShow():
+		# 	substr ="//"+substr
+		# variables_str += protoTpl.getRowLineCore(substr, variable.name, index)
+		# index += 1
+		variables_str += variable.toProto()
 
 	variables_str = variables_str.strip(' \t\n\t')
 	row_table_name = excelparse.rowTableName.upper()
 	row_data_table_code_str = protoTpl.getRowCode(row_table_name, variables_str)
 	# 组合列表代码字符串
 	group_table_name = excelparse.groupTableName.upper()
-	group_data_table_code_str = protoTpl.getGroupcode(row_data_table_code_str,group_table_name, row_table_name)
+	group_data_table_code_str = protoTpl.getGroupcode(row_data_table_code_str,group_table_name, row_table_name, excelparse.hasCommon)
 	return group_data_table_code_str
 	
 def excel_to_protonew(excel_path):
@@ -73,7 +73,7 @@ def generate_target_file(protoDir,proto_file, target_path, language_sign):
 	# subprocess.call(command, shell=True)
 	try:
 		output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT, universal_newlines=True)
-		print(output)
+		# print(output)
 	except subprocess.CalledProcessError as e:
 		print(f"Command failed : {e.returncode}:")
 		print(e.output)
@@ -153,14 +153,15 @@ def genearte_common_to_proto():
 		messagestrs =''
 		for msg in messages:
 			messagestrs += msg
+		messagestrs += protoTpl.inttpl
 		comproto = protoTpl.getGroupcode2(messagestr, False)
 		common = Path(config.GetRootProto()).joinpath(f"table_common.{config.scriptExtDict['proto']}")
 		config.writeFile(common, comproto)
 
 
 def clean():
-	config.clean_directory(config.GetRootProto())
-	config.clean_directory(config.GetRootBytes())
+	config.clean_directory(config.GetRootProto(), True)
+	config.clean_directory(config.GetRootBytes(), True)
 
 def run():
 	#print('---------------- 清理旧文件 ----------------')

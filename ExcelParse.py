@@ -6,22 +6,8 @@ import openpyxl
 import sys
 import numpy as np
 import config
-
-class CellInfo:
-    def __init__(self, type, name, value = None):
-        self.type = type
-        self.name = name
-        self.originaldata = ''
-        self.value = value
-        self.row = 0
-        self.col = 0
-        self.prototype = None
-        self.protoshow = 0
-        self.arrayvalue = []
-    def isRepeated(self):
-        return self.prototype == "repeated"
-    def isShow(self):
-        return self.protoshow == 1
+from CellInfo import CellInfo
+import NumberParse
 
 class ExcelParse:
     ARRAY_SPLITTER = '#'
@@ -100,6 +86,7 @@ class ExcelParse:
         self.rowTableName = sheet.title
         self.groupTableName = sheet.title
         data_col_count = sheet.max_column  + 1                             #列数,看是否需要+1
+        index = 1
         for col_num in range(1, data_col_count):
             name_datacell = sheet.cell(self.keynamerow, col_num)
             if not name_datacell.value:
@@ -131,12 +118,13 @@ class ExcelParse:
             protoshowcell = sheet.cell(self.protoshow, col_num)
             protoshow = protoshowcell.value
 
-            cell = CellInfo(row_type_data, variable_name)
-            cell.protoshow = protoshow
-            cell.prototype = prototype
+            cell = CellInfo(row_type_data, type_data, variable_name, None, prototype, protoshow, index)
+            # cell.protoshow = protoshow
+            # cell.prototype = prototype
             cell.col = col_num
 
             self.variableDict.append(cell)
+            index += 1
 
         data_row_count = sheet.max_row
 
@@ -148,22 +136,23 @@ class ExcelParse:
                 rowcell = row_data[variable.col -1]
                 cell = copy.deepcopy(variable)
                 cell.originaldata = rowcell.value
-                if  config.CheckDefaultType(cell.type):
-                    if cell.isRepeated():
-                        if not rowcell.value == None:
-                            if '|' in rowcell.value or '&' in rowcell.value:
-                                arrayv = re.split(ExcelParse.LIST_SPLITCHAR, rowcell.value) #rowcell.value.split(ExcelParse.ARRAY_SPLITTER)
-                                for v in arrayv:
-                                    cell.arrayvalue.append(self.get_repeate_value(cell.type, v))
-                            else:
-                                arrayv = re.split(ExcelParse.ARRAY_SPLITTER, rowcell.value) #rowcell.value.split(ExcelParse.ARRAY_SPLITTER)
-                                for v in arrayv:
-                                    cell.arrayvalue.append(self.get_repeate_value(cell.type, v))
-                    else:
-                        cellvalue = self.get_real_value(cell.type, rowcell.value)
-                        cell.value = cellvalue
-                else:
-                    cell.arrayvalue = self.PareCustomType(cell.type)
+                # if  config.CheckDefaultType(cell.type):
+                #     if cell.isRepeated():
+                #         if not rowcell.value == None:
+                #             if '|' in rowcell.value or '&' in rowcell.value:
+                #                 arrayv = re.split(ExcelParse.LIST_SPLITCHAR, rowcell.value) #rowcell.value.split(ExcelParse.ARRAY_SPLITTER)
+                #                 for v in arrayv:
+                #                     cell.arrayvalue.append(self.get_repeate_value(cell.type, v))
+                #             else:
+                #                 arrayv = re.split(ExcelParse.ARRAY_SPLITTER, rowcell.value) #rowcell.value.split(ExcelParse.ARRAY_SPLITTER)
+                #                 for v in arrayv:
+                #                     cell.arrayvalue.append(self.get_repeate_value(cell.type, v))
+                #     else:
+                #         cellvalue = self.get_real_value(cell.type, rowcell.value)
+                #         cell.value = cellvalue
+                # else:
+                #     cell.arrayvalue = self.PareCustomType(cell.type)
+                cell.arrayvalue = NumberParse.Parse(cell.typename, rowcell.value)
 
                 cell.row = rowcell.row
                 single_row_data.append(cell)

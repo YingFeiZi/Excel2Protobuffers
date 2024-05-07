@@ -7,10 +7,9 @@ message %s {
 }
 """
 
-group_code = """
-syntax = "proto3";
-package TABLE;
+group_code = """syntax = "proto3";
 %s
+package TABLE;
 
 %s
 """
@@ -27,12 +26,16 @@ import "table_common.proto";
 row_code_normal = "    %s %s = %d;\n"
 row_code_repeated = "    repeated %s %s = %d;\n"
 
+inttpl = '''
+message MessageCount {
+    sint32 Count = 1;
+}
+'''
 
-def getRowLineCore(data_type, variable, index, isArry=False):
-    if isArry:
-        return  row_code_repeated % (data_type, variable, index)
-    else:
-        return  row_code_normal % (data_type, variable, index)
+
+def getRowLineCore(data_type, variable, index):
+    return  row_code_normal % (data_type, variable, index)
+
 def getGroupcode(row_datas, group_table_name, row_table_name, isCommon=True):
     com = isCommon and commomproto or ''
     # return group_code % (com,row_datas, group_table_name, row_table_name)

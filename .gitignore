@@ -11,6 +11,7 @@ __pycache__/
 /gen_Lua
 /include
 /gen_configcs
+*pb2.py
 # C extensions
 *.so
 
