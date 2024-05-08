@@ -272,7 +272,11 @@ class FileConverterApp(QWidget):
     def outputWritten(self, text):
         cursor = self.log_area.textCursor()
         cursor.movePosition(QTextCursor.MoveOperation.End)
-        cursor.insertText(text)
+        # cursor.insertText(text)
+        # 创建一个带有HTML格式的新块并插入
+        cursor.beginEditBlock()
+        cursor.insertHtml(text)
+        cursor.endEditBlock()
         self.log_area.setTextCursor(cursor)
         self.log_area.ensureCursorVisible()
 

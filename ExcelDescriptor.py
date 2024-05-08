@@ -4,11 +4,13 @@ import re
 from cv2 import DRAW_MATCHES_FLAGS_DRAW_OVER_OUTIMG
 import openpyxl
 from google.protobuf.descriptor import FieldDescriptor
+from regex import E
 import Encrypted
 from io import BytesIO
 from google.protobuf.internal.encoder import _EncodeVarint
 from google.protobuf.message import Message
 import sys
+from pathlib import Path
 import numpy as np
 import config
 from CellInfo import CellInfo
@@ -85,10 +87,10 @@ class ExcelDescriptor:
 
     def readsheet(self, sheet):
         self.variableDict = [] 
-        self.sheetName = sheet.title
-        self.pbName = f"{sheet.title}_pb2"
-        self.rowTableName = sheet.title
-        self.groupTableName = sheet.title
+        self.sheetName = Path(self.path).stem
+        self.pbName = f"{self.sheetName}_pb2"
+        self.rowTableName = self.sheetName
+        self.groupTableName = self.sheetName
         data_col_count = sheet.max_column  + 1                             #列数,看是否需要+1
 
         self.PareProtoDesc(self.pbName, self.sheetName.upper())
@@ -101,110 +103,139 @@ class ExcelDescriptor:
         ENUM_FIELD_LABEL = 3
 
 
+        rowCount = self.datarow
         for row_data in sheet.iter_rows(min_row=self.datarow , max_row=data_row_count, min_col=1, max_col=data_col_count):
             # print("row_values = " + str(row_data))
             # 存储每一个字段的字段名，数值，类型
             row = self.entry_name()
             self.row_array.append(row)
-
             for field_desc in self.proto_desc:
                 # print(field_desc)
-                row_value = row_data[field_desc[ENUM_FIELD_NUMBER]-1].value
+                celCount = field_desc[ENUM_FIELD_NUMBER]-1
+                row_value = row_data[celCount].value
                 # print("SSS" + str(field_desc[ENUM_FIELD_NUMBER]-1))
                 # print(str(row))
                 # print("---------------1------------------------")
                 if row_value == None or row_value == '':
                     continue
 
-                if type(row_value) == float:
-                    row_value = str(int(row_value))
-                if field_desc[ENUM_FIELD_TYPE] == str:
-                    if field_desc[ENUM_FIELD_LABEL] == FieldDescriptor.LABEL_REQUIRED:
-                        if type(row_value) != type(u"1") and type(row_value) != type("1"):
-                            self.LogTableInfo(row_data.row, field_desc[ENUM_FIELD_NUMBER])
-                        setattr(row, field_desc[ENUM_FIELD_NAME], row_value)
-                    elif field_desc[ENUM_FIELD_LABEL] == FieldDescriptor.LABEL_REPEATED:
-                        for section in row_value.strip().replace('|', '^').split('^'):
-                            section = section.strip()
-                            if section != "":
+                try:
+                    if type(row_value) == float:
+                        row_value = str(int(row_value))
+
+                    if field_desc[ENUM_FIELD_TYPE] == str:
+                        if field_desc[ENUM_FIELD_LABEL] == FieldDescriptor.LABEL_REQUIRED:
+                            if type(row_value) != type(u"1") and type(row_value) != type("1"):
+                                self.LogTableInfo(row_data.row, field_desc[ENUM_FIELD_NUMBER])
+                            setattr(row, field_desc[ENUM_FIELD_NAME], row_value)
+                        elif field_desc[ENUM_FIELD_LABEL] == FieldDescriptor.LABEL_REPEATED:
+                            for section in row_value.strip().replace('|', '^').split('^'):
+                                section = section.strip()
+                                if section != "":
+                                    getattr(row, field_desc[ENUM_FIELD_NAME]).append(section)
+                        else:
+                            setattr(row, field_desc[ENUM_FIELD_NAME], str(row_value))
+
+                    # int32
+                    elif field_desc[ENUM_FIELD_TYPE] == np.int32:
+                        if field_desc[ENUM_FIELD_LABEL] == FieldDescriptor.LABEL_REQUIRED:
+                            if type(row_value) != type("1"):
+                                self.LogTableInfo(row_data.row, field_desc[ENUM_FIELD_NUMBER])
+                            if self.CheckNoneOrNull(row_value):
+                                row_value = int(0)
+                            else:
+                                row_value = int(row_value)
+                            setattr(row, field_desc[ENUM_FIELD_NAME], row_value)
+                        elif field_desc[ENUM_FIELD_LABEL] == FieldDescriptor.LABEL_REPEATED:
+                            vlist = NumberParse.ParseStringToIntList(row_value)
+                            for section in  vlist:
+                                if not section == None:
+                                    getattr(row, field_desc[ENUM_FIELD_NAME]).append(section)
+
+                        else:
+                            if self.CheckNoneOrNull(row_value):
+                                row_value = int(0)
+                            else:
+                                row_value = int(row_value)
+
+                            setattr(row, field_desc[ENUM_FIELD_NAME], row_value)
+                    
+                    elif field_desc[ENUM_FIELD_TYPE] == np.int64:
+                        if field_desc[ENUM_FIELD_LABEL] == FieldDescriptor.LABEL_REQUIRED:
+                            if type(row_value) != type("1"):
+                                self.LogTableInfo(row_data.row, field_desc[ENUM_FIELD_NUMBER])
+                            if self.CheckNoneOrNull(row_value):
+                                row_value = int(0)
+                            else:
+                                row_value = int(row_value)
+                            setattr(row, field_desc[ENUM_FIELD_NAME], row_value)
+                        elif field_desc[ENUM_FIELD_LABEL] == FieldDescriptor.LABEL_REPEATED:
+                            valueList = []
+                            if not self.CheckNoneOrNull(row_value):
+                                if config.LIST_SPLITCHAR1 in row_value:
+                                    valueList = NumberParse.ParseStringToComboList(row_value, config.LIST_SPLITCHAR1, config.ARRAY_SPLITTER)
+                                elif config.LIST_SPLITCHAR2 in row_value:
+                                    valueList = NumberParse.ParseStringToComboList(row_value, config.LIST_SPLITCHAR2, config.ARRAY_SPLITTER)
+                            for section in  valueList:
                                 getattr(row, field_desc[ENUM_FIELD_NAME]).append(section)
+
+                        else:
+                            if self.CheckNoneOrNull(row_value):
+                                row_value = int(0)
+                            else:
+                                row_value = int(row_value)
+                            setattr(row, field_desc[ENUM_FIELD_NAME], row_value)
+
+                    elif field_desc[ENUM_FIELD_TYPE] == bool:
+                        if field_desc[ENUM_FIELD_LABEL] == FieldDescriptor.LABEL_REQUIRED:
+                            if type(row_value) != type(True):
+                                self.LogTableInfo(row_data.row, field_desc[ENUM_FIELD_NUMBER])
+                            setattr(row, field_desc[ENUM_FIELD_NAME], bool(row_value))
+                        elif field_desc[ENUM_FIELD_LABEL] == FieldDescriptor.LABEL_REPEATED:
+                            for section in row_value.strip().replace('|', '^').split('^'):
+                                if section != "":
+                                    getattr(row, field_desc[ENUM_FIELD_NAME]).append(bool(section))
+                        else:
+                            if self.CheckNoneOrNull(row_value):
+                                row_value = int(0)
+                            else:
+                                row_value = int(row_value)
+                            setattr(row, field_desc[ENUM_FIELD_NAME], bool(row_value))
+                    #float
+                    elif field_desc[ENUM_FIELD_TYPE] == float:
+                        if field_desc[ENUM_FIELD_LABEL] == FieldDescriptor.LABEL_REQUIRED:
+                            row_value = float(0) if row_value == "" else float(row_value)
+                            setattr(row,field_desc[ENUM_FIELD_NAME],float(row_value))
+                        elif field_desc[ENUM_FIELD_LABEL] == FieldDescriptor.LABEL_REPEATED:
+                            for section in row_value.strip().replace('|','^').split('^'):
+                                if section != "":
+                                    getattr(row,field_desc[ENUM_FIELD_NAME].append(float(section)))
+                        else:
+                            if self.CheckNoneOrNull(row_value):
+                                row_value = float(0)
+                            else:
+                                row_value = float(row_value)
+                            setattr(row,field_desc[ENUM_FIELD_NAME],float(row_value))
+
+                    # Uint64List
+                    elif field_desc[ENUM_FIELD_TYPE] == table_common_pb2.Uint64List:
+                        if not self.CheckNoneOrNull(row_value):
+                            for data in NumberParse.ParseUint64List(row_value):
+                                item = self.ParseUint64List(data)
+                                if not item:
+                                    print("pass item drop failed: " + row_value)
+                                getattr(row, field_desc[ENUM_FIELD_NAME]).append(item)
+
                     else:
-                        setattr(row, field_desc[ENUM_FIELD_NAME], str(row_value))
+                        print("invalid field type: " + str(field_desc[ENUM_FIELD_TYPE]))
+                except Exception as e:
+                    print(f"<br><font color='red'>{self.sheetName}, row:{rowCount}  cel:{celCount} error: {e}</font>")
+            rowCount += 1
 
-                # int32
-                elif field_desc[ENUM_FIELD_TYPE] == np.int32:
-                    if field_desc[ENUM_FIELD_LABEL] == FieldDescriptor.LABEL_REQUIRED:
-                        if type(row_value) != type("1"):
-                            self.LogTableInfo(row_data.row, field_desc[ENUM_FIELD_NUMBER])
-                        row_value = int(0) if row_value == "" else int(row_value)
-                        setattr(row, field_desc[ENUM_FIELD_NAME], row_value)
-                    elif field_desc[ENUM_FIELD_LABEL] == FieldDescriptor.LABEL_REPEATED:
-                        vlist = NumberParse.ParseStringToIntList(row_value.strip())
-                        for section in  vlist:
-                            if not section == None:
-                                getattr(row, field_desc[ENUM_FIELD_NAME]).append(section)
-
-                    else:
-                        row_value = int(0) 
-                        setattr(row, field_desc[ENUM_FIELD_NAME], row_value)
-                
-                elif field_desc[ENUM_FIELD_TYPE] == np.int64:
-                    if field_desc[ENUM_FIELD_LABEL] == FieldDescriptor.LABEL_REQUIRED:
-                        if type(row_value) != type("1"):
-                            self.LogTableInfo(row_data.row, field_desc[ENUM_FIELD_NUMBER])
-                        row_value = int(0) if row_value == "" else int(row_value)
-                        setattr(row, field_desc[ENUM_FIELD_NAME], row_value)
-                    elif field_desc[ENUM_FIELD_LABEL] == FieldDescriptor.LABEL_REPEATED:
-                        valueList = []
-                        if config.LIST_SPLITCHAR1 in row_value.strip():
-                            valueList = NumberParse.ParseStringToComboList(row_value, config.LIST_SPLITCHAR1, config.ARRAY_SPLITTER)
-                        elif config.LIST_SPLITCHAR2 in row_value.strip():
-                            valueList = NumberParse.ParseStringToComboList(row_value, config.LIST_SPLITCHAR2, config.ARRAY_SPLITTER)
-
-                        for section in  valueList:
-                            getattr(row, field_desc[ENUM_FIELD_NAME]).append(section)
-
-                    else:
-                        row_value = int(0) 
-                        setattr(row, field_desc[ENUM_FIELD_NAME], row_value)
-
-                elif field_desc[ENUM_FIELD_TYPE] == bool:
-                    if field_desc[ENUM_FIELD_LABEL] == FieldDescriptor.LABEL_REQUIRED:
-                        if type(row_value) != type(True):
-                            self.LogTableInfo(row_data.row, field_desc[ENUM_FIELD_NUMBER])
-                        setattr(row, field_desc[ENUM_FIELD_NAME], bool(row_value))
-                    elif field_desc[ENUM_FIELD_LABEL] == FieldDescriptor.LABEL_REPEATED:
-                        for section in row_value.strip().replace('|', '^').split('^'):
-                            if section != "":
-                                getattr(row, field_desc[ENUM_FIELD_NAME]).append(bool(section))
-                    else:
-                        row_value = int(0) if row_value == "" else int(row_value)
-                        setattr(row, field_desc[ENUM_FIELD_NAME], bool(row_value))
-                #float
-                elif field_desc[ENUM_FIELD_TYPE] == float:
-                    if field_desc[ENUM_FIELD_LABEL] == FieldDescriptor.LABEL_REQUIRED:
-                        row_value = float(0) if row_value == "" else float(row_value)
-                        setattr(row,field_desc[ENUM_FIELD_NAME],float(row_value))
-                    elif field_desc[ENUM_FIELD_LABEL] == FieldDescriptor.LABEL_REPEATED:
-                        for section in row_value.strip().replace('|','^').split('^'):
-                            if section != "":
-                                getattr(row,field_desc[ENUM_FIELD_NAME].append(float(section)))
-                    else:
-                        row_value = float(0) if row_value == "" else float(row_value)
-                        setattr(row,field_desc[ENUM_FIELD_NAME],float(row_value))
-
-                # Uint64List
-                elif field_desc[ENUM_FIELD_TYPE] == table_common_pb2.Uint64List:
-                    if row_value != "":
-                        for data in NumberParse.ParseUint64List(row_value):
-                            item = self.ParseUint64List(data)
-                            if not item:
-                                print("pass item drop failed: " + row_value)
-                            getattr(row, field_desc[ENUM_FIELD_NAME]).append(item)
-
-                else:
-                    print("invalid field type: " + str(field_desc[ENUM_FIELD_TYPE]))
         self.isParseSuccess = True
+
+    def CheckNoneOrNull(self,value):
+        return value == None or value == ''  or value == ""
 
     def Write(self, path):
         with open(path, 'wb') as f:
@@ -223,7 +254,7 @@ class ExcelDescriptor:
             b.close()
 
     def LogTableInfo(self, row,col):
-        print(f"数据类型错误，在表格 {str(row)} row {str(col) }col")
+        print(f"<br>数据类型错误，在表格 {str(row)} row {str(col) }col")
 
     def ParseUint64List(self,row_value):
         uList= table_common_pb2.Uint64List()

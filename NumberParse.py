@@ -38,11 +38,11 @@ def get_real_value(data_type, row_value):
             return None
         return npv
     except ValueError as e:
-        print(f"无法将 {trizv} 转换为 uint32 类型，ValueError: {e}")
+        print(f"<br><font color='red'>无法将 {trizv} 转换为 uint32 类型，ValueError: {e}</font>")
         return None
 def ParseStringToComboList(value, split1, split2):
     vs = []
-    arrayv = re.split(split1, value)
+    arrayv = value.split(split1)
     for v in arrayv:
         vs.append(ParsePart(v, split2))
     return vs

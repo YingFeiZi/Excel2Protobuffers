@@ -229,8 +229,7 @@ def GetFullPathExtension(path, filename, extension):
 
 def GetFileNameExt(file):
 	p = Path(file)
-	name, ext = p.name, p.suffix
-	return re.split(r"\.|-", name)[0], ext
+	return p.stem, p.suffix
 
 def clean_directory(target_path, isClear = False):
     # 确保目标路径是一个目录
@@ -257,7 +256,7 @@ def clean_directory(target_path, isClear = False):
 ####################################################################################################################
 ARRAY_SPLITTER = '#'
 LIST_SPLITCHAR1 = '&'
-LIST_SPLITCHAR2 = '\|'
+LIST_SPLITCHAR2 = '|'
 LIST_SPLITCHAR3 = '\|&'
 SPLITLIST = ['#', '-', '|', '&']
 arry32 = ['int', 'int32', 'sint32', 'sfixed32']

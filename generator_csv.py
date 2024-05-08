@@ -113,13 +113,13 @@ class excel2csv():
         return error_count
 
     def run(self):
-        print('---------------- 将excel生成CSV数据 ----------------')
+        print('<br>---------------- 将excel生成CSV数据 ----------------')
         excels = config.GetFilesByExtension(config.GEN_DIR_DICT['xlsx'],config.scriptExtDict['xlsx'])
         index =  1
         count = len(excels)
         for excel in excels:
             name, ext = config.GetFileNameExt(excel)
             
-            print(f"[{index}/{count}]  {str(Path(self.output_dir).joinpath(name + ''))}.csv")
+            print(f"<br>[{index}/{count}]  {str(Path(self.output_dir).joinpath(name + ''))}.csv")
             self.excel_to_csv(excel)
             index += 1

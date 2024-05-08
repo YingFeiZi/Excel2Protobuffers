@@ -164,13 +164,13 @@ def generate_all_excel_byte_data():
 	for excel in excels:
 		name, ext = excel.stem, excel.suffix
 		ext = config.scriptExtDict['bytes']
-		print(f"[{index}/{count}]  {config.GetRootBytes()}\\{name}.{ext}")
-		generate_excel_data_new(str(excel))
-		# generate_excel_data_desc(str(excel))
+		print(f"<br>[{index}/{count}]  {config.GetRootBytes()}\\{name}.{ext}")
+		# generate_excel_data_new(str(excel))
+		generate_excel_data_desc(str(excel))
 		index += 1
 
 def run():
-	print('---------------- 将excel生成Protouf二进制数据 ----------------')
+	print('<br>---------------- 将excel生成Protouf二进制数据 ----------------')
 	# for p in sys.path:
 	# 	print(p)
 	generate_all_excel_byte_data()

@@ -61,7 +61,7 @@ def protoFormat(excelparse):
 	
 def excel_to_protonew(excel_path):
 	excelparse = ExcelParse(excel_path, config.TYPEROW, config.NAMEROW, config.DATAROW, config.PROTOTYPE, config.PROTOSHOW)
-	excelparse.readExcel()
+	excelparse.readExcel(False)
 	if excelparse.isParseSuccess:
 		writeProto(excelparse)
 
@@ -100,7 +100,7 @@ def generate_target(language_sign):
 		index += 1
 		name, ext = proto_file.stem, proto_file.suffix
 		ext = config.scriptExtDict[language_sign]
-		print(f"[{index}/{count}]  {target_path}\\{name}.{ext}")
+		print(f"<br>[{index}/{count}]  {target_path}\\{name}.{ext}")
 		if language_sign == 'configcs':
 			generate_config(name, target_path)
 			name = f"{name}Config"
@@ -115,7 +115,7 @@ def genearte_excel_to_proto():
 	for excel in excels:
 		name, ext = excel.stem, excel.suffix
 		ext = config.scriptExtDict['proto']
-		print(f"[{index}/{count}]  {config.GetRootBytes()}\\{name}.{ext}")
+		print(f"<br>[{index}/{count}]  {config.GetRootBytes()}\\{name}.{ext}")
 		excel_to_protonew(str(excel))
 		index += 1
 def genearte_common_to_proto():
@@ -167,12 +167,12 @@ def run():
 	#print('---------------- 清理旧文件 ----------------')
 	clean()
 
-	print("---------------- 生成Proto文件, 生成不同语言代码 ----------------")
+	print("<br>---------------- 生成Proto文件, 生成不同语言代码 ----------------")
 	genearte_common_to_proto()
 	genearte_excel_to_proto()
-	print("---------------- 开始生成 python代码 ----------------")
+	print("<br>---------------- 开始生成 python代码 ----------------")
 	generate_target('python')	# 生成Python代码是必须的，因为要用来打包数据
-	print("---------------- 开始生成 csharp 代码 ----------------")
+	print("<br>---------------- 开始生成 csharp 代码 ----------------")
 	generate_target('csharp')
 	# print("\n---------------- 开始生成 config csharp 代码 ----------------")
 	# generate_target('configcs')

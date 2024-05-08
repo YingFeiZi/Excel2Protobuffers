@@ -4,6 +4,7 @@ import re
 from cv2 import DRAW_MATCHES_FLAGS_DRAW_OVER_OUTIMG
 import openpyxl
 import sys
+from pathlib import Path
 import numpy as np
 import config
 from CellInfo import CellInfo
@@ -25,56 +26,57 @@ class ExcelParse:
         self.datarow = datarow
         self.isParseSuccess = False
         self.hasCommon = False
-    def trimDotZeroes(self,text):
-        if isinstance(text, str):
-            text = text.strip()
-            if text == "": return 0
-            return re.sub("\.0+$", "", text)
-        return text
-    def get_repeate_value(self,data_type, row_value):
-        arr = re.split(ExcelParse.ARRAY_SPLITTER, row_value)
-        if len(arr) > 1:
-            if data_type in ExcelParse.arryu64:
-                v1 = int(np.int32(self.trimDotZeroes(arr[0])))
-                v2 = int(np.int32(self.trimDotZeroes(arr[1])))
-                return (v1<<32) | v2
+    # def trimDotZeroes(self,text):
+    #     if isinstance(text, str):
+    #         text = text.strip()
+    #         if text == "": return 0
+    #         return re.sub("\.0+$", "", text)
+    #     return text
+    # def get_repeate_value(self,data_type, row_value):
+    #     arr = re.split(ExcelParse.ARRAY_SPLITTER, row_value)
+    #     if len(arr) > 1:
+    #         if data_type in ExcelParse.arryu64:
+    #             v1 = int(np.int32(self.trimDotZeroes(arr[0])))
+    #             v2 = int(np.int32(self.trimDotZeroes(arr[1])))
+    #             return (v1<<32) | v2
 
-        else:
-            return self.get_real_value(data_type, row_value)
+    #     else:
+    #         return self.get_real_value(data_type, row_value)
 
 
-    def get_real_value(self,data_type, row_value):
-        if not row_value :
-            return None
-            # print('data_type: ', data_type, 'row_value:', row_value)
-        trizv = self.trimDotZeroes(row_value)
-        try:
-            npv = None
-            if data_type == 'string':
-                value = str(row_value)
-                value = value.replace('\\', '\\\\')
-                npv = '''{}'''.format(value)
-            elif data_type in ExcelParse.arry32:
-                npv = np.int32(trizv) 
-            elif data_type in ExcelParse.arryu32:
-                npv = np.uint32(trizv) 
-            elif data_type in ExcelParse.arry64:
-                npv = np.int64(trizv) 
-            elif data_type in ExcelParse.arryu64:
-                npv = np.uint64(trizv)
-            elif data_type == 'float':
-                npv = float(row_value)
-            elif data_type == 'bool':
-                npv = bool(row_value)
-            else:
-                return None
-            return npv
-        except ValueError as e:
-            print(f"无法将 {trizv} 转换为 uint32 类型，ValueError: {e}")
-            return None
-    def readExcel(self, readOnly=False):
+    # def get_real_value(self,data_type, row_value):
+    #     if not row_value :
+    #         return None
+    #         # print('data_type: ', data_type, 'row_value:', row_value)
+    #     trizv = self.trimDotZeroes(row_value)
+    #     try:
+    #         npv = None
+    #         if data_type == 'string':
+    #             value = str(row_value)
+    #             value = value.replace('\\', '\\\\')
+    #             npv = '''{}'''.format(value)
+    #         elif data_type in ExcelParse.arry32:
+    #             npv = np.int32(trizv) 
+    #         elif data_type in ExcelParse.arryu32:
+    #             npv = np.uint32(trizv) 
+    #         elif data_type in ExcelParse.arry64:
+    #             npv = np.int64(trizv) 
+    #         elif data_type in ExcelParse.arryu64:
+    #             npv = np.uint64(trizv)
+    #         elif data_type == 'float':
+    #             npv = float(row_value)
+    #         elif data_type == 'bool':
+    #             npv = bool(row_value)
+    #         else:
+    #             return None
+    #         return npv
+    #     except ValueError as e:
+    #         print(f"<font color='red'>无法将 {trizv} 转换为 {data_type} 类型，ValueError: {e}</font>")
+    #         return None
+    def readExcel(self, readAll = True, readOnly=False):
         if not config.CheckExcelFile(self.path):
             return False
+        self.readAll = readAll
         self.wb = openpyxl.load_workbook(self.path,readOnly, False,True)
         self.sheet = self.wb.active
         self.readsheet(self.sheet)
@@ -82,12 +84,14 @@ class ExcelParse:
 
     def readsheet(self, sheet):
         self.variableDict = [] 
-        self.sheetName = sheet.title
-        self.rowTableName = sheet.title
-        self.groupTableName = sheet.title
+        self.sheetName = Path(self.path).stem
+        self.rowTableName = self.sheetName
+        self.groupTableName = self.sheetName
         data_col_count = sheet.max_column  + 1                             #列数,看是否需要+1
-        index = 1
+        index = 0 
+        keys = []
         for col_num in range(1, data_col_count):
+            index += 1
             name_datacell = sheet.cell(self.keynamerow, col_num)
             if not name_datacell.value:
                 continue
@@ -100,16 +104,17 @@ class ExcelParse:
             if type_data == None or type_data.strip() == "": continue
             variable_name = name_data	#name_data[0].upper() + name_data[1:]
             row_type_data = config.GetCustomTypeValue(type_data)
-            if variable_name in self.variableDict:
-                print('异常退出: ','表', self.sheetName, '存在相同的字段名: ', variable_name)
-                self.isParseSuccess = False
-                return 
+            if variable_name in keys:
+                print("<br><font color='red'>异常退出: 表{self.sheetName}存在相同的字段名: {variable_name}</font>")
+                # self.isParseSuccess = False
+                continue
+            else:
+                keys.append(variable_name)
 
             if not config.CheckSupportType(row_type_data):
-                print('表', self.sheetName, '字段', variable_name, '的数据类型', row_type_data,'不在支持的列表中')
-                self.isParseSuccess = False
-                # continue
-                return
+                print(f"<br><font color='red'>表 {self.sheetName}  字段{variable_name}的数据类型{row_type_data}不在支持的列表中</font>")
+                # self.isParseSuccess = False
+                continue
             if not config.CheckDefaultType(row_type_data):
                 self.hasCommon = True
 
@@ -124,37 +129,37 @@ class ExcelParse:
             cell.col = col_num
 
             self.variableDict.append(cell)
-            index += 1
 
         data_row_count = sheet.max_row
 
         self.sheet_row_data_list = []
-        for row_data in sheet.iter_rows(min_row=self.datarow , max_row=data_row_count, min_col=1, max_col=data_col_count):
-            # 存储每一个字段的字段名，数值，类型
-            single_row_data = []
-            for variable in self.variableDict:
-                rowcell = row_data[variable.col -1]
-                cell = copy.deepcopy(variable)
-                cell.originaldata = rowcell.value
-                # if  config.CheckDefaultType(cell.type):
-                #     if cell.isRepeated():
-                #         if not rowcell.value == None:
-                #             if '|' in rowcell.value or '&' in rowcell.value:
-                #                 arrayv = re.split(ExcelParse.LIST_SPLITCHAR, rowcell.value) #rowcell.value.split(ExcelParse.ARRAY_SPLITTER)
-                #                 for v in arrayv:
-                #                     cell.arrayvalue.append(self.get_repeate_value(cell.type, v))
-                #             else:
-                #                 arrayv = re.split(ExcelParse.ARRAY_SPLITTER, rowcell.value) #rowcell.value.split(ExcelParse.ARRAY_SPLITTER)
-                #                 for v in arrayv:
-                #                     cell.arrayvalue.append(self.get_repeate_value(cell.type, v))
-                #     else:
-                #         cellvalue = self.get_real_value(cell.type, rowcell.value)
-                #         cell.value = cellvalue
-                # else:
-                #     cell.arrayvalue = self.PareCustomType(cell.type)
-                cell.arrayvalue = NumberParse.Parse(cell.typename, rowcell.value)
+        if self.readAll:
+            for row_data in sheet.iter_rows(min_row=self.datarow , max_row=data_row_count, min_col=1, max_col=data_col_count):
+                # 存储每一个字段的字段名，数值，类型
+                single_row_data = []
+                for variable in self.variableDict:
+                    rowcell = row_data[variable.col -1]
+                    cell = copy.deepcopy(variable)
+                    cell.originaldata = rowcell.value
+                    # if  config.CheckDefaultType(cell.type):
+                    #     if cell.isRepeated():
+                    #         if not rowcell.value == None:
+                    #             if '|' in rowcell.value or '&' in rowcell.value:
+                    #                 arrayv = re.split(ExcelParse.LIST_SPLITCHAR, rowcell.value) #rowcell.value.split(ExcelParse.ARRAY_SPLITTER)
+                    #                 for v in arrayv:
+                    #                     cell.arrayvalue.append(self.get_repeate_value(cell.type, v))
+                    #             else:
+                    #                 arrayv = re.split(ExcelParse.ARRAY_SPLITTER, rowcell.value) #rowcell.value.split(ExcelParse.ARRAY_SPLITTER)
+                    #                 for v in arrayv:
+                    #                     cell.arrayvalue.append(self.get_repeate_value(cell.type, v))
+                    #     else:
+                    #         cellvalue = self.get_real_value(cell.type, rowcell.value)
+                    #         cell.value = cellvalue
+                    # else:
+                    #     cell.arrayvalue = self.PareCustomType(cell.type)
+                    cell.arrayvalue = NumberParse.Parse(cell.typename, rowcell.value)
 
-                cell.row = rowcell.row
-                single_row_data.append(cell)
-            self.sheet_row_data_list.append(single_row_data)
+                    cell.row = rowcell.row
+                    single_row_data.append(cell)
+                self.sheet_row_data_list.append(single_row_data)
         self.isParseSuccess = True
