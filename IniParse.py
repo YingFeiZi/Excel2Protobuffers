@@ -11,7 +11,7 @@ import configparser
 # 创建IniParse对象
 confini = IniParse('customType.ini')
 # 获取特定section下的所有项
-section_name = 'Uint64List'
+section_name = 'Int64List'
 options = confini.get_section_options(section_name)
 # ini1 = confini.get_option('name')
 ini1 = confini.get_option('ilist')

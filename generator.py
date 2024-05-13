@@ -18,7 +18,7 @@ def CopyToFolder(name, outDir,language_sign):
 			except IOError as e:
 				print(f"--->ERROR: An error occurred while copying {name}.bytes or {name}.cs: {e}")
 
-names =['cfg_genre_manyiu']
+names =['cfg_aid']
 # names =['cfg_duplicate']
 # names =['cfg_lang']
 # names =[]

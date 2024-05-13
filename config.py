@@ -266,7 +266,7 @@ arryu64 = ['uint64', 'fixed64']
 
 def get_split_char(value):
     for c in SPLITLIST:
-        if c in value:
+        if c in str(value):
             return c
     return None
 ####################################################################################################################

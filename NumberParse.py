@@ -57,6 +57,7 @@ def ParseStringToIntList(value):
     vs = []
     c = config.get_split_char(value)
     if c == '' or c == None:
+        vs.append(value)
         return vs
     arrayv = re.split(c, str(value))
     for v in arrayv:

@@ -68,8 +68,8 @@ class ExcelDescriptor:
             elif desc.type == desc.TYPE_MESSAGE:
                 msg_desc = desc.message_type
                 field_type = msg_desc.name
-                if msg_desc.name == "Uint64List":
-                    field_type = table_common_pb2.Uint64List
+                if msg_desc.name == "Int64List":
+                    field_type = table_common_pb2.Int64List
                 else:
                     print("bad field type: " + msg_desc.name)
 
@@ -217,8 +217,8 @@ class ExcelDescriptor:
                                 row_value = float(row_value)
                             setattr(row,field_desc[ENUM_FIELD_NAME],float(row_value))
 
-                    # Uint64List
-                    elif field_desc[ENUM_FIELD_TYPE] == table_common_pb2.Uint64List:
+                    # Int64List
+                    elif field_desc[ENUM_FIELD_TYPE] == table_common_pb2.Int64List:
                         if not self.CheckNoneOrNull(row_value):
                             for data in NumberParse.ParseUint64List(row_value):
                                 item = self.ParseUint64List(data)
@@ -257,7 +257,7 @@ class ExcelDescriptor:
         print(f"<br>数据类型错误，在表格 {str(row)} row {str(col) }col")
 
     def ParseUint64List(self,row_value):
-        uList= table_common_pb2.Uint64List()
+        uList= table_common_pb2.Int64List()
         for data in row_value:
             uList.list.append(data)
         return uList
