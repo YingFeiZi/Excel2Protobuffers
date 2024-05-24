@@ -157,8 +157,8 @@ def GetCustomTypeList(type):
     customlist = []
     if len(section) > 0:
         index=1
-        for v2 in section:
-            op = customini.get_option(v2)
+        for op in section.values():
+            # op = customini.get_option(v2)
             # repeated#uint64#list
             arr = str(op).split('#')
             # print(op)

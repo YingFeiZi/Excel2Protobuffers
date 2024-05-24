@@ -1,6 +1,7 @@
 import copy
 import re
 import sys
+from cycler import V
 import numpy as np
 import config
 from CellInfo import CellInfo
@@ -46,12 +47,29 @@ def ParseStringToComboList(value, split1, split2):
     for v in arrayv:
         vs.append(ParsePart(v, split2))
     return vs
+
+def ParseStringToList(value, split1):
+    vs = []
+    arrayv = value.split(split1)
+    for v in arrayv:
+        vs.append(int(np.int32(trimDotZeroes(v))))
+    return vs
+
 def ParsePart(value, split):
     arr = re.split(split, value)
     if len(arr) > 1:
         v1 = int(np.int64(trimDotZeroes(arr[0])))
         v2 = int(np.int32(trimDotZeroes(arr[1])))
         return (v1<<32) | v2
+
+def ParseStringList(value):
+    vs = []
+    c = config.get_split_char(value)
+    if c == '' or c == None:
+        vs.append(value)
+        return vs
+    vs = re.split(c, value)
+    return vs
 
 def ParseStringToIntList(value):
     vs = []
@@ -65,13 +83,33 @@ def ParseStringToIntList(value):
         vs.append(vv)
     return vs
 
-def ParseUint64List(value):
+def ParseInt64List(value):
     vs = []
     arrayv = re.split(config.LIST_SPLITCHAR1, value)
     for v in arrayv:
         arrayvalue = ParseStringToComboList(v, config.LIST_SPLITCHAR2, config.ARRAY_SPLITTER)
         vs.append(arrayvalue)
     return vs
+
+def ParseInt32List(value):
+    vs = []
+    if config.LIST_SPLITCHAR1 in value:
+        arrayv = re.split(config.LIST_SPLITCHAR1, value)
+    else:
+        arrayv = re.split(config.LIST_SPLITCHAR2, value)
+    for v in arrayv:
+        arrayvalue = ParseStringToList(v, config.ARRAY_SPLITTER)
+        vs.append(arrayvalue)
+    return vs
+
+def ParseInt32ListList(value):
+    vs = []
+    arrayv = re.split(config.LIST_SPLITCHAR1, value)
+    for v in arrayv:
+        arrayvalue = ParseInt32List(v)
+        vs.append(arrayvalue)
+    return vs
+
 
 def Parse(type, cvalue):
     vs = []

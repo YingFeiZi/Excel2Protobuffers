@@ -120,18 +120,20 @@ def genearte_excel_to_proto():
 		index += 1
 def genearte_common_to_proto():
 	messages =[]
+	hasAdd=[]
 	for v in config.CUSTOM_TYPES:
 		customvalue = config.GetCustomTypeValue(v)
 		if not config.CheckDefaultType(customvalue):
 			arrys = config.GetCustomTypeList(customvalue)
-			if not arrys == None:
+			if not arrys == None and len(arrys) > 0 and not customvalue in hasAdd:
 				variables_str=''
+				hasAdd.append(customvalue)
 				for arr in arrys:
 					index = arr[0]
 					substr = f"{arr[1]} {arr[2]}"
 					variables_str += protoTpl.getRowLineCore(substr, arr[3], index)
-				messagestr = protoTpl.getRowCode(customvalue, variables_str)
-				messages.append(messagestr)
+				msgstr = protoTpl.getRowCode(customvalue, variables_str)
+				messages.append(msgstr)
 
 			# section = config.customini.get_section_options(customvalue)
 			# if len(section) > 0:
@@ -153,8 +155,8 @@ def genearte_common_to_proto():
 		messagestrs =''
 		for msg in messages:
 			messagestrs += msg
-		messagestrs += protoTpl.inttpl
-		comproto = protoTpl.getGroupcode2(messagestr, False)
+		# messagestrs += protoTpl.inttpl
+		comproto = protoTpl.getGroupcode2(messagestrs, False)
 		common = Path(config.GetRootProto()).joinpath(f"table_common.{config.scriptExtDict['proto']}")
 		config.writeFile(common, comproto)
 

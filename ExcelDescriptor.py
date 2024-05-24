@@ -70,6 +70,10 @@ class ExcelDescriptor:
                 field_type = msg_desc.name
                 if msg_desc.name == "Int64List":
                     field_type = table_common_pb2.Int64List
+                elif msg_desc.name == "Int32List":
+                    field_type = table_common_pb2.Int32List
+                elif msg_desc.name == "Int32ListList":
+                    field_type = table_common_pb2.Int32ListList
                 else:
                     print("bad field type: " + msg_desc.name)
 
@@ -108,7 +112,7 @@ class ExcelDescriptor:
             # print("row_values = " + str(row_data))
             # 存储每一个字段的字段名，数值，类型
             row = self.entry_name()
-            self.row_array.append(row)
+            isadd = False
             for field_desc in self.proto_desc:
                 # print(field_desc)
                 celCount = field_desc[ENUM_FIELD_NUMBER]-1
@@ -118,10 +122,11 @@ class ExcelDescriptor:
                 # print("---------------1------------------------")
                 if row_value == None or row_value == '':
                     continue
+                isadd = True
 
                 try:
                     if type(row_value) == float:
-                        row_value = str(int(row_value))
+                        row_value = str(row_value)
 
                     if field_desc[ENUM_FIELD_TYPE] == str:
                         if field_desc[ENUM_FIELD_LABEL] == FieldDescriptor.LABEL_REQUIRED:
@@ -129,7 +134,8 @@ class ExcelDescriptor:
                                 self.LogTableInfo(row_data.row, field_desc[ENUM_FIELD_NUMBER])
                             setattr(row, field_desc[ENUM_FIELD_NAME], row_value)
                         elif field_desc[ENUM_FIELD_LABEL] == FieldDescriptor.LABEL_REPEATED:
-                            for section in row_value.strip().replace('|', '^').split('^'):
+                            vlist =  NumberParse.ParseStringList(row_value)
+                            for section in vlist:
                                 section = section.strip()
                                 if section != "":
                                     getattr(row, field_desc[ENUM_FIELD_NAME]).append(section)
@@ -192,22 +198,27 @@ class ExcelDescriptor:
                                 self.LogTableInfo(row_data.row, field_desc[ENUM_FIELD_NUMBER])
                             setattr(row, field_desc[ENUM_FIELD_NAME], bool(row_value))
                         elif field_desc[ENUM_FIELD_LABEL] == FieldDescriptor.LABEL_REPEATED:
-                            for section in row_value.strip().replace('|', '^').split('^'):
+                            vlist = NumberParse.ParseStringToIntList(row_value)
+                            for section in vlist:
                                 if section != "":
                                     getattr(row, field_desc[ENUM_FIELD_NAME]).append(bool(section))
                         else:
                             if self.CheckNoneOrNull(row_value):
-                                row_value = int(0)
+                                row_value = bool(0)
                             else:
-                                row_value = int(row_value)
-                            setattr(row, field_desc[ENUM_FIELD_NAME], bool(row_value))
+                                row_value = bool(row_value)
+                            setattr(row, field_desc[ENUM_FIELD_NAME], row_value)
                     #float
                     elif field_desc[ENUM_FIELD_TYPE] == float:
                         if field_desc[ENUM_FIELD_LABEL] == FieldDescriptor.LABEL_REQUIRED:
-                            row_value = float(0) if row_value == "" else float(row_value)
-                            setattr(row,field_desc[ENUM_FIELD_NAME],float(row_value))
+                            if self.CheckNoneOrNull(row_value):
+                                row_value = float(0)
+                            else:
+                                row_value = float(row_value)
+                            setattr(row,field_desc[ENUM_FIELD_NAME], row_value)
                         elif field_desc[ENUM_FIELD_LABEL] == FieldDescriptor.LABEL_REPEATED:
-                            for section in row_value.strip().replace('|','^').split('^'):
+                            vlist =  NumberParse.ParseStringList(row_value)
+                            for section in vlist:
                                 if section != "":
                                     getattr(row,field_desc[ENUM_FIELD_NAME].append(float(section)))
                         else:
@@ -215,21 +226,42 @@ class ExcelDescriptor:
                                 row_value = float(0)
                             else:
                                 row_value = float(row_value)
-                            setattr(row,field_desc[ENUM_FIELD_NAME],float(row_value))
+                            setattr(row,field_desc[ENUM_FIELD_NAME], row_value)
 
                     # Int64List
                     elif field_desc[ENUM_FIELD_TYPE] == table_common_pb2.Int64List:
                         if not self.CheckNoneOrNull(row_value):
-                            for data in NumberParse.ParseUint64List(row_value):
-                                item = self.ParseUint64List(data)
+                            for data in NumberParse.ParseInt64List(row_value):
+                                item = self.ParseInt64List(data)
                                 if not item:
                                     print("pass item drop failed: " + row_value)
                                 getattr(row, field_desc[ENUM_FIELD_NAME]).append(item)
+
+                    # Int32List
+                    elif field_desc[ENUM_FIELD_TYPE] == table_common_pb2.Int32List:
+                        if not self.CheckNoneOrNull(row_value):
+                            for data in NumberParse.ParseInt32List(row_value):
+                                item = self.ParseInt32List(data)
+                                if not item:
+                                    print("pass item drop failed: " + row_value)
+                                getattr(row, field_desc[ENUM_FIELD_NAME]).append(item)
+                    
+                    # Int32ListList
+                    elif field_desc[ENUM_FIELD_TYPE] == table_common_pb2.Int32ListList:
+                        if not self.CheckNoneOrNull(row_value):
+                            for data in NumberParse.ParseInt32ListList(row_value):
+                                item = self.ParseInt32ListList(data)
+                                if not item:
+                                    print("pass item drop failed: " + row_value)
+                                getattr(row, field_desc[ENUM_FIELD_NAME]).append(item)
+                    
 
                     else:
                         print("invalid field type: " + str(field_desc[ENUM_FIELD_TYPE]))
                 except Exception as e:
                     print(f"<br><font color='red'>{self.sheetName}, row:{rowCount}  cel:{celCount} error: {e}</font>")
+            if isadd:
+                self.row_array.append(row)
             rowCount += 1
 
         self.isParseSuccess = True
@@ -256,8 +288,20 @@ class ExcelDescriptor:
     def LogTableInfo(self, row,col):
         print(f"<br>数据类型错误，在表格 {str(row)} row {str(col) }col")
 
-    def ParseUint64List(self,row_value):
-        uList= table_common_pb2.Int64List()
+    def ParseInt64List(self,row_value):
+        VList= table_common_pb2.Int64List()
         for data in row_value:
-            uList.list.append(data)
-        return uList
+            VList.list.append(data)
+        return VList
+    
+    def ParseInt32List(self,row_value):
+        VList= table_common_pb2.Int32List()
+        for data in row_value:
+            VList.list.append(data)
+        return VList
+    
+    def ParseInt32ListList(self,row_value):
+        VList= table_common_pb2.Int32ListList()
+        for data in row_value:
+            VList.list.append(self.ParseInt32List(data))
+        return VList

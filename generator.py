@@ -18,7 +18,7 @@ def CopyToFolder(name, outDir,language_sign):
 			except IOError as e:
 				print(f"--->ERROR: An error occurred while copying {name}.bytes or {name}.cs: {e}")
 
-names =['cfg_aid']
+names =['cfg_cards']
 # names =['cfg_duplicate']
 # names =['cfg_lang']
 # names =[]
@@ -39,7 +39,7 @@ def DoAllOpreater():
 		# CopyToFolder(f"{name}Config", config.getOutputConfigCSDir(), 'configcs')
 	gcs = genCSV.excel2csv()
 	gcs.run()
-	print("Done")
+	print("<br>Done")
 
 
 
