@@ -78,16 +78,16 @@ def do_excel(path):
                 # 这里假设我们只处理字符串类型的单元格值
                 continue
 
-            # 检查单元格值是否为自定义类型
-            if not cell.value in cusrp:
-                continue
-            cell.value = ReplaceType(cell.value)
-
-
-            # a,b = HasHtml(cell.value)
-            # if not a and not b:
+            # # 检查单元格值是否为自定义类型
+            # if not cell.value in cusrp:
             #     continue
-            # cell.value = ParseHtml(cell.value)
+            # cell.value = ReplaceType(cell.value)
+
+
+            a,b = HasHtml(cell.value)
+            if not a and not b:
+                continue
+            cell.value = ParseHtml(cell.value)
 
             # print(cell.value)
             ischang = True

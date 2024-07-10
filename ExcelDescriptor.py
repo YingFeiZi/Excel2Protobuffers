@@ -167,18 +167,19 @@ class ExcelDescriptor:
                             setattr(row, field_desc[ENUM_FIELD_NAME], row_value)
                     
                     elif field_desc[ENUM_FIELD_TYPE] == np.int64:
-                        if field_desc[ENUM_FIELD_LABEL] == FieldDescriptor.LABEL_REQUIRED:
-                            if type(row_value) != type("1"):
-                                self.LogTableInfo(row_data.row, field_desc[ENUM_FIELD_NUMBER])
-                            if self.CheckNoneOrNull(row_value):
-                                row_value = int(0)
-                            else:
-                                row_value = int(row_value)
-                            setattr(row, field_desc[ENUM_FIELD_NAME], row_value)
-                        elif field_desc[ENUM_FIELD_LABEL] == FieldDescriptor.LABEL_REPEATED:
+                        # if field_desc[ENUM_FIELD_LABEL] == FieldDescriptor.LABEL_REQUIRED:
+                        #     if type(row_value) != type("1"):
+                        #         self.LogTableInfo(row_data.row, field_desc[ENUM_FIELD_NUMBER])
+                        #     if self.CheckNoneOrNull(row_value):
+                        #         row_value = int(0)
+                        #     else:
+                        #         row_value = int(row_value)
+                        #     setattr(row, field_desc[ENUM_FIELD_NAME], row_value)
+                        # el
+                        if field_desc[ENUM_FIELD_LABEL] == FieldDescriptor.LABEL_REPEATED:
                             valueList = []
                             if not self.CheckNoneOrNull(row_value):
-                                if config.LIST_SPLITCHAR1 in row_value:
+                                if config.LIST_SPLITCHAR1 in row_value :
                                     valueList = NumberParse.ParseStringToComboList(row_value, config.LIST_SPLITCHAR1, config.ARRAY_SPLITTER)
                                 elif config.LIST_SPLITCHAR2 in row_value:
                                     valueList = NumberParse.ParseStringToComboList(row_value, config.LIST_SPLITCHAR2, config.ARRAY_SPLITTER)
@@ -188,6 +189,8 @@ class ExcelDescriptor:
                         else:
                             if self.CheckNoneOrNull(row_value):
                                 row_value = int(0)
+                            elif NumberParse.CheckSplitChar(row_value):
+                                row_value = NumberParse.ParseStringToCombo(row_value)
                             else:
                                 row_value = int(row_value)
                             setattr(row, field_desc[ENUM_FIELD_NAME], row_value)

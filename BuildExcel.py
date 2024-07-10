@@ -25,6 +25,7 @@ from datetime import datetime
 import warnings
 import config
 import generator
+from enum import Enum
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
@@ -34,6 +35,11 @@ dec = _descriptor.Error()
 mes = _message.Message()
 ref = _reflection.GeneratedProtocolMessageType
 sym = _symbol_database.Default()
+
+class SVNType(Enum):
+    SVN_UPDATE = 1
+    SVN_COMMIT = 2
+
 
 class EmittingStr(QObject):
     textWriten = pyqtSignal(str)
@@ -54,6 +60,9 @@ class FileConverterApp(QWidget):
         sys.stderr.SetContent(self.outputWritten)
         config.initIni()
         self.selectdir = config.ini['exceldir']
+        self.csvdir = config.ini['datadir']
+        self.tabledir = config.ini['outputbytes']
+        self.ProDir = config.ini['prodir']
         self.setWindowTitle(f"File Converter")
         self.resize(700, 520)
         # self.setGeometry(0, 0, 700, 520)
@@ -107,6 +116,10 @@ class FileConverterApp(QWidget):
         convert_all_button.clicked.connect(self.convert_all_files)
         button_layout.addWidget(convert_all_button)
 
+        svnupdate_all_button = QPushButton("SVN提交")
+        svnupdate_all_button.clicked.connect(self.svnupdate_all_files)
+        button_layout.addWidget(svnupdate_all_button)
+
         main_layout.addLayout(button_layout)
 
         # 下方区域：日志显示区域
@@ -133,7 +146,7 @@ class FileConverterApp(QWidget):
         self.clear_log()
         
     def buttonrefresh(self):
-        self.SvnUpdate(self.selectdir)
+        self.SvnUpdate(self.selectdir, SVNType.SVN_UPDATE)
         self.refresh_files(self.search_text.text())
         self.clear_log()
 
@@ -269,6 +282,12 @@ class FileConverterApp(QWidget):
             config.CopyToFolder(p.name)
         generator.DoAllOpreater()
 
+    def svnupdate_all_files(self):
+        self.GenMate()
+        self.SvnUpdate(self.selectdir, SVNType.SVN_COMMIT)
+        self.SvnUpdate(self.csvdir, SVNType.SVN_COMMIT)
+        self.SvnUpdate(self.tabledir, SVNType.SVN_COMMIT)
+
     def outputWritten(self, text):
         cursor = self.log_area.textCursor()
         cursor.movePosition(QTextCursor.MoveOperation.End)
@@ -280,10 +299,24 @@ class FileConverterApp(QWidget):
         self.log_area.setTextCursor(cursor)
         self.log_area.ensureCursorVisible()
 
-    def SvnUpdate(self, path):
-        command = f"TortoiseProc.exe /command:update /path:{path}  /closeonend:1"
-        output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT, universal_newlines=True)
-        print('Update over',output)
+    def SvnUpdate(self, path, type):
+        if type == SVNType.SVN_UPDATE:
+            command = f"TortoiseProc.exe /command:update /path:{path}  /closeonend:1"
+        elif type == SVNType.SVN_COMMIT:
+            command = f"TortoiseProc.exe /command:commit /path:{path}  /closeonend:1"
+        self.DoCMD(command)
+
+    def GenMate(self):
+        command = f"Unity.exe -quit -batchmode -projectPath {self.ProDir}  -executeMethod AssetRefresh.Refresh"
+        self.DoCMD(command)
+
+    def DoCMD(self, cmd):
+        try:
+            output = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT, text=True)
+            print('do over\n',output)
+        except subprocess.CalledProcessError as e:
+            print(f"Command failed with return code {e.returncode}: {e.output} \n") 
+
 
 class EmittingWarring(QObject):
     textWriten = pyqtSignal(str)
@@ -305,6 +338,7 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     converter_app = FileConverterApp()
     waring = EmittingWarring()
+    print('\n')
     waring.SetContent(converter_app.outputWritten)
     converter_app.show()
     sys.exit(app.exec())

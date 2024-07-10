@@ -269,6 +269,9 @@ def get_split_char(value):
         if c in str(value):
             return c
     return None
+
+
+
 ####################################################################################################################
 
 def writeFile(path, context):

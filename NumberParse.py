@@ -55,12 +55,29 @@ def ParseStringToList(value, split1):
         vs.append(int(np.int32(trimDotZeroes(v))))
     return vs
 
+def ParseStringToCombo(value):
+    arrayv = get_split_value(value)
+    if len(arrayv) > 1:
+        return MergeToLong(arrayv[0],arrayv[1]) 
+    return 0
+
+def CheckSplitChar(value):
+    return any((char in value) for char in config.SPLITLIST)
+
+def get_split_value(value):
+    pattern = '|'.join(map(re.escape, config.SPLITLIST))
+    return re.split(pattern, value)
+
 def ParsePart(value, split):
-    arr = re.split(split, value)
-    if len(arr) > 1:
-        v1 = int(np.int64(trimDotZeroes(arr[0])))
-        v2 = int(np.int32(trimDotZeroes(arr[1])))
-        return (v1<<32) | v2
+    arrayv = re.split(split, value)
+    if len(arrayv) > 1:
+        return MergeToLong(arrayv[0],arrayv[1])
+        
+def MergeToLong(int1, int2):
+    v1 = int(np.int64(trimDotZeroes(int1)))
+    v2 = int(np.int32(trimDotZeroes(int2)))
+    return (v1<<32) | v2
+
 
 def ParseStringList(value):
     vs = []
