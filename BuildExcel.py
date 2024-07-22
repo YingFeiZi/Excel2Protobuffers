@@ -62,6 +62,7 @@ class FileConverterApp(QWidget):
         self.selectdir = config.ini['exceldir']
         self.csvdir = config.ini['datadir']
         self.tabledir = config.ini['outputbytes']
+        self.tableCSdir= config.ini['outputcs']
         self.ProDir = config.ini['prodir']
         self.setWindowTitle(f"File Converter")
         self.resize(700, 520)
@@ -286,6 +287,7 @@ class FileConverterApp(QWidget):
         self.GenMate()
         self.SvnUpdate(self.selectdir, SVNType.SVN_COMMIT)
         self.SvnUpdate(self.csvdir, SVNType.SVN_COMMIT)
+        self.SvnUpdate(self.tableCSdir, SVNType.SVN_COMMIT)
         self.SvnUpdate(self.tabledir, SVNType.SVN_COMMIT)
 
     def outputWritten(self, text):
