@@ -183,6 +183,9 @@ class ExcelDescriptor:
                                     valueList = NumberParse.ParseStringToComboList(row_value, config.LIST_SPLITCHAR1, config.ARRAY_SPLITTER)
                                 elif config.LIST_SPLITCHAR2 in row_value:
                                     valueList = NumberParse.ParseStringToComboList(row_value, config.LIST_SPLITCHAR2, config.ARRAY_SPLITTER)
+                                else:
+                                    value = NumberParse.ParsePart(row_value, config.ARRAY_SPLITTER)
+                                    valueList.append(value)
                             for section in  valueList:
                                 getattr(row, field_desc[ENUM_FIELD_NAME]).append(section)
 
