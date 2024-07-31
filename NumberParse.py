@@ -1,3 +1,4 @@
+import array
 import copy
 import re
 import sys
@@ -81,20 +82,12 @@ def MergeToLong(int1, int2):
 
 def ParseStringList(value):
     vs = []
-    c = config.get_split_char(value)
-    if c == '' or c == None:
-        vs.append(value)
-        return vs
-    vs = re.split(c, value)
+    vs = re.split(config.LIST_SPLITAll, value)
     return vs
 
 def ParseStringToIntList(value):
     vs = []
-    c = config.get_split_char(value)
-    if c == '' or c == None:
-        vs.append(value)
-        return vs
-    arrayv = re.split(c, str(value))
+    arrayv = ParseStringList(str(value))
     for v in arrayv:
         vv = get_real_value('int', v)
         vs.append(vv)
@@ -110,10 +103,11 @@ def ParseInt64List(value):
 
 def ParseInt32List(value):
     vs = []
-    if config.LIST_SPLITCHAR1 in value:
-        arrayv = re.split(config.LIST_SPLITCHAR1, value)
-    else:
-        arrayv = re.split(config.LIST_SPLITCHAR2, value)
+    # if config.LIST_SPLITCHAR1 in value:
+    #     arrayv = re.split(config.LIST_SPLITCHAR1, value)
+    # else:
+    #     arrayv = re.split(config.LIST_SPLITCHAR2, value)
+    arrayv = re.split(config.LIST_SPLITCHAR3, value)
     for v in arrayv:
         arrayvalue = ParseStringToList(v, config.ARRAY_SPLITTER)
         vs.append(arrayvalue)
