@@ -117,6 +117,8 @@ class ExcelDescriptor:
                 # print(field_desc)
                 celCount = field_desc[ENUM_FIELD_NUMBER]-1
                 row_value = row_data[celCount].value
+                if celCount == 0 and "//" in str(row_value):
+                    break
                 # print("SSS" + str(field_desc[ENUM_FIELD_NUMBER]-1))
                 # print(str(row))
                 # print("---------------1------------------------")
@@ -237,7 +239,7 @@ class ExcelDescriptor:
                     # Int64List
                     elif field_desc[ENUM_FIELD_TYPE] == table_common_pb2.Int64List:
                         if not self.CheckNoneOrNull(row_value):
-                            for data in NumberParse.ParseInt64List(row_value):
+                            for data in NumberParse.ParseInt64List(str(row_value)):
                                 item = self.ParseInt64List(data)
                                 if not item:
                                     print("pass item drop failed: " + row_value)
@@ -246,7 +248,7 @@ class ExcelDescriptor:
                     # Int32List
                     elif field_desc[ENUM_FIELD_TYPE] == table_common_pb2.Int32List:
                         if not self.CheckNoneOrNull(row_value):
-                            for data in NumberParse.ParseInt32List(row_value):
+                            for data in NumberParse.ParseInt32List(str(row_value)):
                                 item = self.ParseInt32List(data)
                                 if not item:
                                     print("pass item drop failed: " + row_value)
@@ -255,7 +257,7 @@ class ExcelDescriptor:
                     # Int32ListList
                     elif field_desc[ENUM_FIELD_TYPE] == table_common_pb2.Int32ListList:
                         if not self.CheckNoneOrNull(row_value):
-                            for data in NumberParse.ParseInt32ListList(row_value):
+                            for data in NumberParse.ParseInt32ListList(str(row_value)):
                                 item = self.ParseInt32ListList(data)
                                 if not item:
                                     print("pass item drop failed: " + row_value)

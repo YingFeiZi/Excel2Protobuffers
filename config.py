@@ -256,9 +256,9 @@ def clean_directory(target_path, isClear = False):
 ####################################################################################################################
 ARRAY_SPLITTER = '#'
 LIST_SPLITCHAR1 = '&'
-LIST_SPLITCHAR2 = r'\|'
+LIST_SPLITCHAR2 = '|'
 LIST_SPLITCHAR3 = r'[\|&]'
-LIST_SPLITAll = r'[#\-\|&]'
+LIST_SPLITAll = r'[#\|&]'
 SPLITLIST = ['#', '-', '|', '&']
 arry32 = ['int', 'int32', 'sint32', 'sfixed32']
 arryu32 = ['uint','uint32', 'fixed32']
