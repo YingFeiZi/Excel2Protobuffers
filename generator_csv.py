@@ -9,6 +9,7 @@ class excel2csv():
         self.output_dir = config.ini['datadir']
         self.input_start = int(config.ini['xlsstar'])
         self.output_start = int(config.ini['csvstar'])
+        self.output_csvkey = int(config.ini['csvkey'])
 
     def get_red(self,text):
         """
@@ -87,17 +88,36 @@ class excel2csv():
         error_count = 0
 
         try:
+            target_row = worksheet[self.output_csvkey]
+            row_data = [cell.value for cell in target_row]
+            passKey = [] 
+            for i in range(len(row_data)):
+                if str(row_data[i]).startswith('//'):
+                    passKey.append(i)
+            
             with codecs.open(outPutFileName, 'w', encoding='utf-8') as f:
                 writer = csv.writer(f)
-                for row in range(1,self.output_start):
-                    writer.writerow([])
                 rows = worksheet.rows
+                # for row_num, raw_value in enumerate(rows):
+                #     if row_num == self.output_csvkey:
+                #         for col_num, col_value in enumerate(raw_value):
+                #             if str(col_value.value).startswith('//'):
+                #                 passKey.append(col_num)
+                #         break
                 for row_num, raw_value in enumerate(rows):
                     if row_num < (self.input_start - 1):
                         continue
                     rowvalues = []
                     for col_num, col_value in enumerate(raw_value):
+                        #跳过注释列
+                        if col_num in passKey:
+                            continue
                         value = col_value.value
+                        if col_num == 0:
+                            if str(value).startswith('//'):
+                               break 
+                            # if '/' in str(value):
+                            #     value  = str(value).split('/')[1]
                         if isinstance(value, float):
                             if value == int(value):
                                 value = int(value)
@@ -106,7 +126,8 @@ class excel2csv():
                                 rowvalues.append(str(value))
                         else:
                             rowvalues.append(value)
-                    writer.writerow(rowvalues)
+                    if len(rowvalues) > 0:
+                        writer.writerow(rowvalues)
         except Exception as e:
                 print("  导表失败:" + intPutFileName + "," + " 错误信息:" + str(e))  # 打印导出失败信息
         workbook.close()

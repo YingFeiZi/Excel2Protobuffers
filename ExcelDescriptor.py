@@ -117,7 +117,7 @@ class ExcelDescriptor:
                 # print(field_desc)
                 celCount = field_desc[ENUM_FIELD_NUMBER]-1
                 row_value = row_data[celCount].value
-                if celCount == 0 and "//" in str(row_value):
+                if celCount == 0 and str(row_value).startswith('/'):
                     break
                 # print("SSS" + str(field_desc[ENUM_FIELD_NUMBER]-1))
                 # print(str(row))

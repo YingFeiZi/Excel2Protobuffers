@@ -28,6 +28,10 @@ tools Excel to Protobuffers
         DATAROW = 4   # 第四行是开始读数据位置数据
         
     4.执行run.bat 自动生成出对应语言代码及序列化的excel数据, 传参，文件名，支持多个， 无参就是整个excel目录 
+## 新增
+    1.支持配置第一栏id中:
+        // 忽略导出
+         / 忽略导出CSV
 
 ## 支持类型：
     1.默认类型 
