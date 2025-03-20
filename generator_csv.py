@@ -116,8 +116,8 @@ class excel2csv():
                         if col_num == 0:
                             if str(value).startswith('//'):
                                break 
-                            # if '/' in str(value):
-                            #     value  = str(value).split('/')[1]
+                            if str(value).startswith('/'):
+                                value  = str(value).replace('/','')
                         if isinstance(value, float):
                             if value == int(value):
                                 value = int(value)
